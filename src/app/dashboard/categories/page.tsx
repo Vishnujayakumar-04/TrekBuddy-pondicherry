@@ -2,35 +2,43 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { Card, CardContent } from '@/components/ui/card';
+import Image from 'next/image';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
-    Umbrella, AlertTriangle, TreePine, Moon, MapPin,
-    Utensils, Hotel, ShoppingBag, Clapperboard, Bus,
-    ArrowRight, Search
+    Umbrella, TreePine, MapPin,
+    Utensils, ShoppingBag, Bus,
+    ArrowRight, Search, Sparkles, Compass
 } from 'lucide-react';
-import { DashboardHeader } from '@/components/layout/DashboardHeader';
+
+const CATEGORY_IMAGES: Record<string, string> = {
+    beaches: 'https://images.unsplash.com/photo-1582552938357-32b906df40cb?w=800&auto=format&fit=crop&q=80',
+    heritage: 'https://images.unsplash.com/photo-1596711684365-1779956bd448?w=800&auto=format&fit=crop&q=80',
+    spiritual: 'https://images.unsplash.com/photo-1623835606828-09553e77c8e3?w=800&auto=format&fit=crop&q=80',
+    restaurants: 'https://images.unsplash.com/photo-1555507036-ab1f40388085?w=800&auto=format&fit=crop&q=80',
+    nature: 'https://images.unsplash.com/photo-1596707328604-faed4c53574c?w=800&auto=format&fit=crop&q=80',
+    adventure: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=800&auto=format&fit=crop&q=80',
+    shopping: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=800&auto=format&fit=crop&q=80',
+    transport: 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800&auto=format&fit=crop&q=80',
+};
+
+const HERO_IMAGE = 'https://images.unsplash.com/photo-1621517720977-ce9d53da3657?w=1600&auto=format&fit=crop&q=80';
 
 export default function CategoriesPage() {
     const [searchQuery, setSearchQuery] = useState('');
+    const [hoveredCard, setHoveredCard] = useState<string | null>(null);
 
     const categories = [
-        { id: 'beaches', name: 'Beaches', icon: Umbrella, color: 'text-blue-500', bg: 'bg-blue-500/10', desc: 'Sun, sand, and sea' },
-        { id: 'temples', name: 'Temples', icon: '🛕', color: 'text-orange-500', bg: 'bg-orange-500/10', desc: 'Spiritual heritage' },
-        { id: 'churches', name: 'Churches', icon: '⛪', color: 'text-blue-600', bg: 'bg-blue-600/10', desc: 'French architecture' },
-        { id: 'museums', name: 'Museums', icon: '🏛️', color: 'text-amber-700', bg: 'bg-amber-700/10', desc: 'History & Culture' },
-        { id: 'parks', name: 'Parks & Gardens', icon: TreePine, color: 'text-green-500', bg: 'bg-green-500/10', desc: 'Nature & Relaxation' },
-        { id: 'heritage', name: 'Heritage Sites', icon: '🏰', color: 'text-yellow-600', bg: 'bg-yellow-600/10', desc: 'Colonial buildings' },
-        { id: 'restaurants', name: 'Restaurants', icon: Utensils, color: 'text-red-500', bg: 'bg-red-500/10', desc: 'Local & French cuisine' },
-        { id: 'hotels', name: 'Hotels', icon: Hotel, color: 'text-purple-500', bg: 'bg-purple-500/10', desc: 'Comfortable stays' },
-        { id: 'shopping', name: 'Shopping', icon: ShoppingBag, color: 'text-pink-500', bg: 'bg-pink-500/10', desc: 'Souvenirs & more' },
-        { id: 'nightlife', name: 'Nightlife', icon: Moon, color: 'text-indigo-500', bg: 'bg-indigo-500/10', desc: 'Pubs & Bars' },
-        { id: 'adventure', name: 'Adventure', icon: MapPin, color: 'text-orange-600', bg: 'bg-orange-600/10', desc: 'Be active' },
-        { id: 'theatres', name: 'Theatres', icon: Clapperboard, color: 'text-red-600', bg: 'bg-red-600/10', desc: 'Movies & Entertainment' },
-        { id: 'transport', name: 'Transport', icon: Bus, color: 'text-blue-400', bg: 'bg-blue-400/10', desc: 'Getting around' },
-        { id: 'emergency', name: 'Emergency', icon: AlertTriangle, color: 'text-red-700', bg: 'bg-red-700/10', desc: 'Important contacts' },
+        { id: 'beaches', name: 'Beaches', icon: Umbrella, desc: 'Sun-kissed shores & sunrise walks', emoji: '🏖️', count: '8 spots' },
+        { id: 'heritage', name: 'Heritage', icon: '🏰', desc: 'French Quarter & colonial charm', emoji: '🏛️', count: '12 spots' },
+        { id: 'spiritual', name: 'Spiritual', icon: '🛕', desc: 'Temples, Ashrams & inner peace', emoji: '🕉️', count: '6 spots' },
+        { id: 'restaurants', name: 'Food & Dining', icon: Utensils, desc: 'Cafes, French cuisine & street food', emoji: '🍽️', count: '15 spots' },
+        { id: 'nature', name: 'Nature', icon: TreePine, desc: 'Mangroves, lakes & botanical gardens', emoji: '🌿', count: '5 spots' },
+        { id: 'adventure', name: 'Adventure', icon: MapPin, desc: 'Scuba, surfing & kayaking', emoji: '🏄', count: '7 spots' },
+        { id: 'shopping', name: 'Shopping', icon: ShoppingBag, desc: 'Boutiques, handicrafts & markets', emoji: '🛍️', count: '9 spots' },
+        { id: 'transport', name: 'Local Transit', icon: Bus, desc: 'Bikes, buses, autos & trains', emoji: '🚲', count: '20+ options' },
     ];
 
     const filteredCategories = categories.filter(cat =>
@@ -38,92 +46,172 @@ export default function CategoriesPage() {
         cat.desc.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    const container = {
-        hidden: { opacity: 0 },
-        show: {
-            opacity: 1,
-            transition: {
-                staggerChildren: 0.05
-            }
-        }
-    };
-
-    const item = {
-        hidden: { y: 20, opacity: 0 },
-        show: { y: 0, opacity: 1 }
-    };
-
     return (
-        <div className="min-h-screen pb-12">
-            <DashboardHeader
-                title="Explore Categories"
-                subtitle="Discover Puducherry your way. Select a category to find the best spots curated just for you."
-                showHome={true}
-            />
+        <div className="min-h-screen pb-20 relative">
+            {/* Immersive Hero Section */}
+            <div className="relative h-[50vh] min-h-[400px] w-full overflow-hidden -mt-16">
+                <Image
+                    src={HERO_IMAGE}
+                    alt="Puducherry"
+                    fill
+                    className="object-cover scale-105"
+                    priority
+                    unoptimized
+                />
+                {/* Multi-layer gradient overlay */}
+                <div className="absolute inset-0 bg-gradient-to-b from-slate-950/40 via-slate-950/20 to-slate-50 dark:to-slate-950" />
+                <div className="absolute inset-0 bg-gradient-to-r from-slate-950/30 via-transparent to-transparent" />
 
-            <div className="container px-4 md:px-6 max-w-7xl mx-auto space-y-8">
-                {/* Search Bar */}
-                <div className="relative max-w-md mx-auto md:mx-0">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Search className="h-5 w-5 text-slate-400" />
+                {/* Hero Content */}
+                <div className="absolute inset-0 flex flex-col justify-end pb-16 px-4 md:px-6 max-w-7xl mx-auto w-full">
+                    <motion.div
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.8, ease: 'easeOut' }}
+                        className="space-y-4"
+                    >
+                        <Badge className="bg-white/15 backdrop-blur-xl text-white border-white/20 px-4 py-1.5 text-sm font-semibold rounded-full">
+                            <Sparkles className="w-3.5 h-3.5 mr-2" />
+                            Puducherry Travel Guide
+                        </Badge>
+                        <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-white tracking-tight leading-[0.95]">
+                            Discover<br />
+                            <span className="bg-gradient-to-r from-cyan-300 to-blue-400 bg-clip-text text-transparent">
+                                Puducherry
+                            </span>
+                        </h1>
+                        <p className="text-lg md:text-xl text-white/80 max-w-lg font-medium leading-relaxed">
+                            Curated experiences across beaches, heritage, cuisine & more.
+                        </p>
+                    </motion.div>
+                </div>
+            </div>
+
+            <div className="container px-4 md:px-6 max-w-7xl mx-auto space-y-12 -mt-4 relative z-10">
+                {/* Search Bar — Glassmorphism */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="max-w-xl"
+                >
+                    <div className="relative group">
+                        <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 rounded-2xl blur-lg opacity-0 group-focus-within:opacity-100 transition-opacity duration-500" />
+                        <div className="relative flex items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl shadow-slate-900/5 overflow-hidden">
+                            <Search className="h-5 w-5 text-slate-400 ml-5 shrink-0" />
+                            <Input
+                                type="text"
+                                placeholder="Search beaches, food, adventure..."
+                                className="border-0 h-14 text-base pl-3 pr-5 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-slate-400"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                            {searchQuery && (
+                                <button
+                                    onClick={() => setSearchQuery('')}
+                                    className="text-slate-400 hover:text-slate-600 pr-5 text-sm font-medium"
+                                >
+                                    Clear
+                                </button>
+                            )}
+                        </div>
                     </div>
-                    <Input
-                        type="text"
-                        placeholder="Search categories..."
-                        className="pl-10 h-12 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-full shadow-sm focus-visible:ring-cyan-500"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                    />
+                </motion.div>
+
+                {/* Section Label */}
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
+                        <Compass className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
+                        <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-widest">
+                            Browse by Experience
+                        </h2>
+                    </div>
+                    <div className="flex-1 h-px bg-gradient-to-r from-slate-200 to-transparent dark:from-slate-800" />
                 </div>
 
+                {/* Category Grid — Australia.com style immersive cards */}
                 {filteredCategories.length > 0 ? (
                     <motion.div
-                        variants={container}
-                        initial="hidden"
-                        animate="show"
-                        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.5, delay: 0.2 }}
+                        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5"
                     >
-                        {filteredCategories.map((cat) => (
-                            <motion.div key={cat.id} variants={item} className="h-full">
-                                <Link href={`/dashboard/categories/${cat.id}`} className="block h-full group">
-                                    <div className="h-full">
-                                        <Card className="h-full border-slate-100 dark:border-slate-800 shadow-sm card-hover relative overflow-hidden bg-white dark:bg-slate-900 ring-1 ring-slate-200/50 dark:ring-slate-800">
-                                            <div className={`absolute -top-10 -right-10 w-32 h-32 rounded-full blur-3xl opacity-0 group-hover:opacity-20 transition-opacity duration-500 ${cat.bg.replace('/10', '/40')}`} />
+                        {filteredCategories.map((cat, index) => (
+                            <motion.div
+                                key={cat.id}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.1 + index * 0.06 }}
+                            >
+                                <Link
+                                    href={cat.id === 'transport' ? '/dashboard/transit' : `/dashboard/categories/${cat.id}`}
+                                    className="group block h-full"
+                                    onMouseEnter={() => setHoveredCard(cat.id)}
+                                    onMouseLeave={() => setHoveredCard(null)}
+                                >
+                                    <div className="relative h-72 md:h-80 rounded-2xl overflow-hidden cursor-pointer">
+                                        {/* Background Image */}
+                                        <Image
+                                            src={CATEGORY_IMAGES[cat.id] || CATEGORY_IMAGES.beaches}
+                                            alt={cat.name}
+                                            fill
+                                            className={`object-cover transition-transform duration-700 ease-out ${hoveredCard === cat.id ? 'scale-110' : 'scale-100'}`}
+                                            unoptimized
+                                        />
 
-                                            <CardContent className="flex flex-col items-start justify-between min-h-[180px] p-6 relative z-10">
-                                                <div className={`p-3.5 rounded-2xl ${cat.bg} ${cat.color} group-hover:scale-110 transition-transform duration-300 mb-6 ring-1 ring-inset ring-black/5`}>
-                                                    {typeof cat.icon === 'string' ? <span className="text-2xl">{cat.icon}</span> : <cat.icon className="w-7 h-7" />}
-                                                </div>
+                                        {/* Dark gradient overlay */}
+                                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-transparent transition-opacity duration-300" />
 
-                                                <div className="space-y-3 w-full">
-                                                    <div className="flex items-center justify-between">
-                                                        <h3 className="font-bold text-lg md:text-xl text-slate-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors tracking-tight">
-                                                            {cat.name}
-                                                        </h3>
-                                                        <ArrowRight className={`w-5 h-5 opacity-0 -translate-x-2 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-300 ${cat.color}`} />
-                                                    </div>
-                                                    <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed line-clamp-2">
-                                                        {cat.desc}
-                                                    </p>
-                                                </div>
-                                            </CardContent>
-                                        </Card>
+                                        {/* Hover shine effect */}
+                                        <div className={`absolute inset-0 bg-gradient-to-tr from-cyan-500/10 via-transparent to-transparent transition-opacity duration-500 ${hoveredCard === cat.id ? 'opacity-100' : 'opacity-0'}`} />
+
+                                        {/* Top badge */}
+                                        <div className="absolute top-4 left-4 z-10">
+                                            <span className="text-2xl">{cat.emoji}</span>
+                                        </div>
+                                        <div className="absolute top-4 right-4 z-10">
+                                            <Badge className="bg-white/15 backdrop-blur-xl text-white border-white/10 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg">
+                                                {cat.count}
+                                            </Badge>
+                                        </div>
+
+                                        {/* Bottom content */}
+                                        <div className="absolute bottom-0 left-0 right-0 p-5 z-10">
+                                            <h3 className="text-xl md:text-2xl font-bold text-white tracking-tight mb-1 group-hover:text-cyan-300 transition-colors duration-300">
+                                                {cat.name}
+                                            </h3>
+                                            <p className="text-white/70 text-sm font-medium leading-relaxed mb-3">
+                                                {cat.desc}
+                                            </p>
+
+                                            {/* Explore button that slides in on hover */}
+                                            <div className={`flex items-center gap-2 text-sm font-semibold text-cyan-300 transition-all duration-300 ${hoveredCard === cat.id ? 'translate-y-0 opacity-100' : 'translate-y-3 opacity-0'}`}>
+                                                <span>Explore</span>
+                                                <ArrowRight className="w-4 h-4" />
+                                            </div>
+                                        </div>
                                     </div>
                                 </Link>
                             </motion.div>
                         ))}
                     </motion.div>
                 ) : (
-                    <div className="text-center py-20">
-                        <p className="text-slate-500 text-lg">No categories found matching &quot;{searchQuery}&quot;</p>
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="text-center py-24"
+                    >
+                        <div className="text-5xl mb-4">🔍</div>
+                        <p className="text-slate-500 text-lg font-medium">No matches found for "{searchQuery}"</p>
                         <Button
                             variant="link"
                             onClick={() => setSearchQuery('')}
-                            className="text-cyan-600 mt-2"
+                            className="text-cyan-600 font-semibold mt-2"
                         >
-                            Clear search
+                            Clear filters
                         </Button>
-                    </div>
+                    </motion.div>
                 )}
             </div>
         </div>

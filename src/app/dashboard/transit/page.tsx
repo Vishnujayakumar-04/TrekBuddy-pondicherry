@@ -1,125 +1,175 @@
 'use client';
 
-import { useEffect } from 'react';
-import Link from 'next/link';
-import { Card, CardContent } from '@/components/ui/card';
-import { motion } from 'framer-motion';
-import { Bike, Car, Bus, Train, ArrowRight, Sparkles } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
+import { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DashboardHeader } from '@/components/layout/DashboardHeader';
+import { Badge } from '@/components/ui/badge';
+import { Sparkles, Bike, Car, Bus, Train, MapPin, Navigation } from 'lucide-react';
 import { seedTransitData } from '@/services/transitService';
 
-const TRANSIT_CATEGORIES = [
-    {
-        id: 'rentals',
-        name: 'Vehicle Rentals',
-        description: 'Self-drive bikes, cars & cycles',
-        icon: Bike,
-        color: 'text-orange-500',
-        bg: 'bg-orange-50 dark:bg-orange-900/20',
-        types: ['Bike', 'Scooty', 'Car', 'Cycle']
-    },
-    {
-        id: 'cabs',
-        name: 'Cabs & Autos',
-        description: 'On-demand local transport',
-        icon: Car,
-        color: 'text-cyan-500',
-        bg: 'bg-cyan-50 dark:bg-cyan-900/20',
-        types: ['Auto Rickshaw', 'City Taxi', 'Bike Taxi']
-    },
-    {
-        id: 'bus',
-        name: 'Bus Services',
-        description: 'PRTC & Inter-state routes',
-        icon: Bus,
-        color: 'text-blue-600',
-        bg: 'bg-blue-50 dark:bg-blue-900/20',
-        types: ['Local Town Bus', 'Inter-city (Chennai/Bangalore)']
-    },
-    {
-        id: 'train',
-        name: 'Train',
-        description: 'Railway schedules & status',
-        icon: Train,
-        color: 'text-purple-600',
-        bg: 'bg-purple-50 dark:bg-purple-900/20',
-        types: ['Express', 'Passenger']
-    }
+// Import sub-page components
+import RentalsPage from './rentals/page';
+import CabsPage from './cabs/page';
+import BusPage from './bus/page';
+import TrainPage from './train/page';
+
+const TAB_CONFIG = [
+    { value: 'rentals', label: 'Vehicle Rentals', icon: Bike, gradient: 'from-emerald-500 to-teal-600', emoji: '🏍️' },
+    { value: 'cabs', label: 'Auto & Cabs', icon: Car, gradient: 'from-amber-500 to-orange-600', emoji: '🚕' },
+    { value: 'bus', label: 'Bus Services', icon: Bus, gradient: 'from-blue-500 to-indigo-600', emoji: '🚌' },
+    { value: 'train', label: 'Train', icon: Train, gradient: 'from-purple-500 to-violet-600', emoji: '🚆' },
 ];
 
 export default function TransitPage() {
+    const [activeTab, setActiveTab] = useState('rentals');
+
     useEffect(() => {
-        // Ensure data exists in Firestore for first-time users
         seedTransitData().catch(error => {
             console.error("Failed to seed transit data:", error);
         });
     }, []);
 
+    const activeConfig = TAB_CONFIG.find(t => t.value === activeTab) || TAB_CONFIG[0];
+
     return (
-        <div className="min-h-screen pb-12">
+        <div className="min-h-screen pb-12 relative overflow-hidden">
+            {/* Animated Background */}
+            <div className="fixed inset-0 -z-20">
+                <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-white to-cyan-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950" />
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:32px_32px]" />
+                {/* Floating orbs */}
+                <motion.div
+                    animate={{ x: [0, 30, 0], y: [0, -20, 0] }}
+                    transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut' }}
+                    className="absolute top-20 right-1/4 w-72 h-72 bg-cyan-400/5 rounded-full blur-3xl"
+                />
+                <motion.div
+                    animate={{ x: [0, -20, 0], y: [0, 30, 0] }}
+                    transition={{ duration: 25, repeat: Infinity, ease: 'easeInOut' }}
+                    className="absolute bottom-20 left-1/4 w-96 h-96 bg-purple-400/5 rounded-full blur-3xl"
+                />
+            </div>
+
             <DashboardHeader
                 title="Getting Around"
-                subtitle="Whether you want to rent a scooter like a local, catch a town bus, or book a cab – find all transport info right here."
-                showHome={true}
+                subtitle="Finding your way around Puducherry is easy with our comprehensive transit guide."
+                showBack={false}
+                showHome={false}
             />
 
             <div className="container px-4 md:px-6 max-w-7xl mx-auto space-y-8">
-                <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="px-3 py-1 text-sm border-cyan-500/30 bg-cyan-500/10 text-cyan-600 backdrop-blur-sm">
-                        <Sparkles className="w-3 h-3 mr-2 inline-block" />
+
+                {/* Hero Stats Bar */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="grid grid-cols-2 md:grid-cols-4 gap-3"
+                >
+                    {[
+                        { label: 'Rental Shops', value: '10+', icon: '🏪', color: 'from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 border-emerald-200/50 dark:border-emerald-800/30' },
+                        { label: 'Cab Services', value: '5+', icon: '🚗', color: 'from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border-amber-200/50 dark:border-amber-800/30' },
+                        { label: 'Bus Routes', value: '20+', icon: '🗺️', color: 'from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-blue-200/50 dark:border-blue-800/30' },
+                        { label: 'Train Lines', value: '6+', icon: '🛤️', color: 'from-purple-50 to-violet-50 dark:from-purple-950/30 dark:to-violet-950/30 border-purple-200/50 dark:border-purple-800/30' },
+                    ].map((stat, i) => (
+                        <motion.div
+                            key={stat.label}
+                            initial={{ opacity: 0, y: 15 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.15 + i * 0.08 }}
+                            whileHover={{ y: -3, scale: 1.02 }}
+                            className={`bg-gradient-to-br ${stat.color} border rounded-2xl p-4 text-center cursor-default group transition-shadow duration-300 hover:shadow-lg`}
+                        >
+                            <span className="text-2xl block mb-1 group-hover:scale-110 transition-transform duration-300">{stat.icon}</span>
+                            <p className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">{stat.value}</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">{stat.label}</p>
+                        </motion.div>
+                    ))}
+                </motion.div>
+
+                {/* Decorative Badge - Centered */}
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.2 }}
+                    className="flex justify-center"
+                >
+                    <Badge variant="outline" className="px-5 py-2 text-sm font-semibold border-cyan-500/20 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 text-cyan-700 dark:text-cyan-400 backdrop-blur-md rounded-full shadow-sm hover:shadow-md transition-shadow">
+                        <Sparkles className="w-3.5 h-3.5 mr-2 inline-block text-cyan-500 animate-pulse" />
                         Namma Pondy Transit
                     </Badge>
-                </div>
+                </motion.div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {TRANSIT_CATEGORIES.map((category) => (
-                        <Link href={`/dashboard/transit/${category.id}`} key={category.id} className="block h-full group">
+                {/* Main Navigation Tabs */}
+                <Tabs defaultValue="rentals" value={activeTab} onValueChange={setActiveTab} className="w-full space-y-8">
+
+                    {/* Centered Navigation Bar */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 }}
+                        className="flex justify-center w-full sticky top-[80px] z-30 py-4 -mx-4 px-4 md:mx-0 md:px-0 md:static"
+                    >
+                        <div className="relative w-full md:w-auto">
+                            {/* Glow behind tabs */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 via-blue-500/10 to-purple-500/10 rounded-full blur-xl opacity-60" />
+                            <TabsList className="relative bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl p-2 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-xl shadow-slate-900/5 inline-flex h-auto w-full md:w-auto overflow-x-auto justify-start md:justify-center no-scrollbar gap-1.5">
+                                {TAB_CONFIG.map((tab) => {
+                                    const Icon = tab.icon;
+                                    const isActive = activeTab === tab.value;
+                                    return (
+                                        <TabsTrigger
+                                            key={tab.value}
+                                            value={tab.value}
+                                            className={`relative rounded-xl px-5 py-3.5 text-sm md:text-base font-semibold transition-all duration-400 flex items-center gap-2.5 min-w-fit
+                                                ${isActive
+                                                    ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-lg shadow-slate-900/20'
+                                                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-800/50'
+                                                }`}
+                                        >
+                                            <span className={`text-lg transition-transform duration-300 ${isActive ? 'scale-110' : ''}`}>{tab.emoji}</span>
+                                            <span>{tab.label}</span>
+                                            {isActive && (
+                                                <motion.div
+                                                    layoutId="activeTabIndicator"
+                                                    className="absolute inset-0 bg-slate-900 dark:bg-white rounded-xl -z-10"
+                                                    transition={{ type: 'spring', bounce: 0.2, duration: 0.5 }}
+                                                />
+                                            )}
+                                        </TabsTrigger>
+                                    );
+                                })}
+                            </TabsList>
+                        </div>
+                    </motion.div>
+
+                    {/* Content Areas with smooth transitions */}
+                    <div className="min-h-[500px]">
+                        <AnimatePresence mode="wait">
                             <motion.div
-                                whileHover={{ y: -4 }}
-                                transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                                className="h-full"
+                                key={activeTab}
+                                initial={{ opacity: 0, y: 12 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -8 }}
+                                transition={{ duration: 0.25, ease: 'easeOut' }}
                             >
-                                <Card className="h-full border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-2xl hover:shadow-cyan-500/10 transition-all duration-300 overflow-hidden relative bg-white dark:bg-slate-900">
-                                    {/* Background decorative blob */}
-                                    <div className={`absolute -top-10 -right-10 w-40 h-40 rounded-full blur-3xl opacity-0 group-hover:opacity-30 transition-opacity duration-500 ${category.bg.replace('50', '400')}`} />
-
-                                    <CardContent className="p-8 flex flex-col h-full relative z-10">
-                                        <div className="flex justify-between items-start mb-6">
-                                            <div className={cn("p-4 rounded-2xl transition-all duration-300 group-hover:scale-110 shadow-sm", category.bg, category.color)}>
-                                                <category.icon className="w-8 h-8" />
-                                            </div>
-                                            <div className="p-2 rounded-full text-slate-300 group-hover:text-cyan-500 transition-colors">
-                                                <ArrowRight className="w-6 h-6 -rotate-45 group-hover:rotate-0 transition-transform duration-300" />
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-3 mb-8 flex-1">
-                                            <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">
-                                                {category.name}
-                                            </h3>
-                                            <p className="text-slate-500 dark:text-slate-400 text-base leading-relaxed">
-                                                {category.description}
-                                            </p>
-                                        </div>
-
-                                        <div className="flex flex-wrap gap-2 mt-auto">
-                                            {category.types.map((type) => (
-                                                <span
-                                                    key={type}
-                                                    className="px-3 py-1 text-xs font-semibold rounded-full bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-100 dark:border-slate-700"
-                                                >
-                                                    {type}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    </CardContent>
-                                </Card>
+                                <TabsContent value="rentals" className="focus-visible:outline-none focus-visible:ring-0 mt-0">
+                                    <RentalsPage embedded={true} />
+                                </TabsContent>
+                                <TabsContent value="cabs" className="focus-visible:outline-none focus-visible:ring-0 mt-0">
+                                    <CabsPage embedded={true} />
+                                </TabsContent>
+                                <TabsContent value="bus" className="focus-visible:outline-none focus-visible:ring-0 mt-0">
+                                    <BusPage embedded={true} />
+                                </TabsContent>
+                                <TabsContent value="train" className="focus-visible:outline-none focus-visible:ring-0 mt-0">
+                                    <TrainPage embedded={true} />
+                                </TabsContent>
                             </motion.div>
-                        </Link>
-                    ))}
-                </div>
+                        </AnimatePresence>
+                    </div>
+                </Tabs>
             </div>
         </div>
     );

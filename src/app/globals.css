@@ -44,21 +44,18 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
-
-  /* Custom Shadows */
-  --shadow-soft: 0 10px 40px -10px rgba(0, 0, 0, 0.08);
-  --shadow-glow: 0 0 20px rgba(6, 182, 212, 0.15);
+  
+  /* Minimal Shadows */
+  --shadow-soft: 0 2px 8px -2px rgba(0, 0, 0, 0.05); /* Subtler shadow */
+  --shadow-glow: 0 0 0 rgba(0,0,0,0); /* Removed glow */
 }
 
 :root {
-  --radius: 1rem;
-  /* 16px for softer, modern feel (Voyay style) */
+  --radius: 0.5rem; /* 8px for cleaner, professional look */
 
-  /* Premium Light Theme - TrekBuddy Signature */
-  --background: #fafafa;
-  /* Modern Off-White */
-  --foreground: #0f172a;
-  /* Slate 900 */
+  /* Calm Light Theme - Clean Slate */
+  --background: #ffffff; /* Pure White */
+  --foreground: #0f172a; /* Slate 900 */
 
   --card: #ffffff;
   --card-foreground: #0f172a;
@@ -66,73 +63,55 @@
   --popover: #ffffff;
   --popover-foreground: #0f172a;
 
-  --primary: #0891b2;
-  /* Cyan 600 */
+  --primary: #0f172a; /* Slate 900 - Professional Primary */
   --primary-foreground: #ffffff;
 
-  --secondary: #fcd34d;
-  /* Amber 300 */
-  --secondary-foreground: #1e293b;
+  --secondary: #f1f5f9; /* Slate 100 */
+  --secondary-foreground: #0f172a;
 
-  --muted: #f1f5f9;
-  /* Slate 100 */
-  --muted-foreground: #64748b;
-  /* Slate 500 */
+  --muted: #f8fafc; /* Slate 50 */
+  --muted-foreground: #64748b; /* Slate 500 */
 
-  --accent: #f0f9ff;
-  /* Sky 50 */
-  --accent-foreground: #0284c7;
-  /* Sky 600 */
+  --accent: #f1f5f9; /* Slate 100 */
+  --accent-foreground: #0f172a;
 
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
 
-  --border: #e2e8f0;
-  /* Slate 200 */
+  --border: #e2e8f0; /* Slate 200 */
   --input: #e2e8f0;
-  --ring: #06b6d4;
-  /* Cyan 500 */
+  --ring: #0ea5e9; /* Sky 500 - Focus Ring only */
 }
 
 .dark {
-  /* Premium Dark Theme */
-  --background: #020617;
-  /* Deepest Slate */
-  --foreground: #f8fafc;
-  /* Slate 50 */
+  /* Calm Dark Theme */
+  --background: #020617; /* Slate 950 */
+  --foreground: #f8fafc; /* Slate 50 */
 
-  --card: #0f172a;
-  /* Slate 900 */
+  --card: #0f172a; /* Slate 900 */
   --card-foreground: #f8fafc;
 
   --popover: #0f172a;
   --popover-foreground: #f8fafc;
 
-  --primary: #22d3ee;
-  /* Cyan 400 */
+  --primary: #f8fafc; /* Slate 50 */
   --primary-foreground: #0f172a;
 
-  --secondary: #fbbf24;
-  /* Amber 400 */
-  --secondary-foreground: #0f172a;
+  --secondary: #1e293b; /* Slate 800 */
+  --secondary-foreground: #f8fafc;
 
-  --muted: #1e293b;
-  /* Slate 800 */
-  --muted-foreground: #94a3b8;
-  /* Slate 400 */
+  --muted: #0f172a; /* Slate 900 */
+  --muted-foreground: #94a3b8; /* Slate 400 */
 
   --accent: #1e293b;
-  /* Slate 800 */
-  --accent-foreground: #38bdf8;
-  /* Sky 400 */
+  --accent-foreground: #f8fafc;
 
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
 
   --border: #1e293b;
-  /* Slate 800 */
   --input: #1e293b;
-  --ring: #22d3ee;
+  --ring: #38bdf8;
 }
 
 @layer base {
@@ -147,23 +126,35 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply tracking-tight font-semibold text-slate-900 dark:text-white;
+  }
 }
 
-/* Custom Utilities */
+/* Custom Utilities - Minimal */
 @layer utilities {
   .glass {
-    @apply bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-white/40 dark:border-slate-800/60 shadow-sm;
+    @apply bg-white/90 backdrop-blur-sm border-b border-slate-100 dark:bg-slate-900/90 dark:border-slate-800;
   }
-
+  
   .card-hover {
-    @apply transition-all duration-300 hover:shadow-soft hover:-translate-y-1 hover:border-cyan-500/30;
+    @apply transition-all duration-200 hover:shadow-sm hover:border-slate-300 dark:hover:border-slate-700;
   }
 
   .text-gradient {
-    @apply bg-gradient-to-r from-cyan-500 to-blue-600 bg-clip-text text-transparent;
+    @apply text-slate-900 dark:text-white;
+  }
+  
+  .container-width {
+    @apply max-w-6xl mx-auto px-6;
   }
 
-  .container-width {
-    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
   }
 }

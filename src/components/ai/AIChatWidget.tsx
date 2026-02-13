@@ -8,9 +8,26 @@ import { Send, Bot, User, Trash2, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, query, where, getDocs, limit, serverTimestamp } from 'firebase/firestore';
-import { getGeminiResponse } from '@/utils/gemini';
+import { ollamaService } from '@/lib/ollama';
 import { getLocalResponse } from '@/utils/localKnowledge';
 import { usePathname } from 'next/navigation';
+
+const PUDUCHERRY_SYSTEM_PROMPT = `You are the official AI Guide for Puducherry (Pondicherry), India.
+Your persona is friendly, knowledgeable, and deeply familiar with local culture, history, and hidden gems.
+
+CORE RULES:
+1. FOCUS: Answer ONLY questions related to Puducherry, Auroville, and surrounding Tamil Nadu areas.
+2. REJECT: If asked about unrelated topics, politely redirect to Puducherry travel.
+3. FORMAT: Keep answers concise (under 3 paragraphs). Use bullet points for lists.
+4. ACCURACY: Do not hallucinate. If unsure, say "I don't have that specific info right now."
+
+KEY KNOWLEDGE AREAS:
+- Beaches: Promenade, Paradise (Chunnambar), Serenity, Auroville Beach.
+- Heritage: White Town (French Quarter), Tamil Quarter, Museums.
+- Spirituality: Sri Aurobindo Ashram, Matrimandir (Auroville), Manakula Vinayagar Temple.
+- Food: French cafes (Baker Street, GMT), Tamil cuisine (Surguru), Italian (Tanto).
+
+TONE: Warm, welcoming, helpful. Like a local friend.`;
 
 interface Message {
     id: string;
@@ -68,7 +85,6 @@ export function AIChatWidget() {
             // 1. Check Local Knowledge (Priority: Instant & Offline)
             const localAnswer = getLocalResponse(userText);
             if (localAnswer) {
-                // Simulate slight delay for natural feel
                 setTimeout(() => {
                     setMessages(prev => [...prev, {
                         id: (Date.now() + 1).toString(),
@@ -82,28 +98,38 @@ export function AIChatWidget() {
             }
 
             // 2. Check Firestore Cache
-            const cacheQuery = query(
-                collection(db, 'ai_cache'),
-                where('question', '==', userText.toLowerCase()),
-                limit(1)
-            );
-            const cacheSnapshot = await getDocs(cacheQuery);
+            try {
+                const cacheQuery = query(
+                    collection(db, 'ai_cache'),
+                    where('question', '==', userText.toLowerCase()),
+                    limit(1)
+                );
+                const cacheSnapshot = await getDocs(cacheQuery);
 
-            if (!cacheSnapshot.empty) {
-                const cachedData = cacheSnapshot.docs[0].data();
-                setMessages(prev => [...prev, {
-                    id: (Date.now() + 1).toString(),
-                    text: cachedData.answer,
-                    sender: 'bot',
-                    timestamp: new Date()
-                }]);
-                setIsTyping(false);
-                return;
+                if (!cacheSnapshot.empty) {
+                    const cachedData = cacheSnapshot.docs[0].data();
+                    setMessages(prev => [...prev, {
+                        id: (Date.now() + 1).toString(),
+                        text: cachedData.answer,
+                        sender: 'bot',
+                        timestamp: new Date()
+                    }]);
+                    setIsTyping(false);
+                    return;
+                }
+            } catch (cacheError) {
+                // Firestore cache miss or error — continue to Ollama
+                console.warn('Cache check failed, using Ollama directly:', cacheError);
             }
 
-            // 3. Fallback to Gemini API
-            const chatHistory = [...messages, userMessage].map(m => ({ text: m.text, sender: m.sender }));
-            const responseText = await getGeminiResponse(userText, chatHistory);
+            // 3. Use Ollama (Local AI)
+            const chatHistory = [...messages, userMessage]
+                .slice(-6)
+                .map(m => `${m.sender === 'user' ? 'User' : 'Guide'}: ${m.text}`)
+                .join('\n');
+
+            const fullPrompt = `${chatHistory}\nUser: ${userText}\nGuide:`;
+            const responseText = await ollamaService.generateResponse(fullPrompt, PUDUCHERRY_SYSTEM_PROMPT);
 
             const botMessage: Message = {
                 id: (Date.now() + 1).toString(),
@@ -113,26 +139,23 @@ export function AIChatWidget() {
             };
             setMessages(prev => [...prev, botMessage]);
 
-            // 4. Save to Firestore Cache (Async)
+            // 4. Save to Firestore Cache (Async, best-effort)
             addDoc(collection(db, 'ai_cache'), {
                 question: userText.toLowerCase(),
                 answer: responseText,
                 createdAt: serverTimestamp()
-            }).catch(console.error);
+            }).catch(() => { /* ignore cache write failures */ });
 
         } catch (error: unknown) {
             console.error('AI response error:', error);
 
-            // Context-Aware Fallback Responses
-            let fallbackText = "I'm having trouble connecting to the cloud.";
+            let fallbackText = "I'm having trouble connecting to Ollama.";
             const errorStr = (error instanceof Error) ? error.message : String(error);
 
-            if (errorStr === 'MISSING_API_KEY') {
-                fallbackText = "I'm currently in offline mode (API key missing). But I can still help with local info!\n\nTry asking about:\n• Popular Beaches\n• Heritage Sites\n• Best Cafes";
-            } else if (errorStr?.includes('fetch') || errorStr?.includes('network')) {
-                fallbackText = "I'm having trouble reaching the internet. While I reconnect, you can ask me about:\n• Beaches\n• Temples\n• French Quarter";
+            if (errorStr?.includes('fetch') || errorStr?.includes('Failed') || errorStr?.includes('ECONNREFUSED')) {
+                fallbackText = "I can't reach Ollama. Make sure 'ollama serve' is running in your terminal!\n\nTry asking about:\n• Popular Beaches\n• Heritage Sites\n• Best Cafes";
             } else {
-                fallbackText = "That took longer than expected. I'm focusing on local knowledge for now.\n\nAsk me about:\n• Bike Rentals\n• Ashrams\n• Local Food";
+                fallbackText = "That took longer than expected. Make sure Ollama is running locally.\n\nAsk me about:\n• Bike Rentals\n• Ashrams\n• Local Food";
             }
 
             setMessages(prev => [...prev, {

@@ -2,17 +2,11 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import {
-    NavigationMenu,
-    NavigationMenuItem,
-    NavigationMenuLink,
-    NavigationMenuList,
-    navigationMenuTriggerStyle,
-} from "@/components/ui/navigation-menu"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -22,219 +16,264 @@ import {
     DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Menu, User, LogOut, Map, Heart, Search, Compass, Shield, PhoneCall } from 'lucide-react';
-import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { Menu, User, LogOut, Map, Heart, Compass, Settings, MessageCircle, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
+
+const NAV_LINKS = [
+    { label: 'Home', href: '/' },
+    { label: 'About', href: '/about' },
+    { label: 'Explore', href: '/dashboard/categories' },
+    { label: 'Planner', href: '/dashboard/planner' },
+    { label: 'AI Guide', href: '/dashboard/chat' },
+];
+
+const MOBILE_LINKS = [
+    { label: 'Home', href: '/', icon: Compass },
+    { label: 'About', href: '/about', icon: Heart },
+    { label: 'Explore', href: '/dashboard/categories', icon: Map },
+    { label: 'Trip Planner', href: '/dashboard/planner', icon: Map },
+    { label: 'AI Guide', href: '/dashboard/chat', icon: MessageCircle },
+];
 
 export function Navbar() {
     const { user, logout } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
+    const pathname = usePathname();
+
+    const isAuthPage = ['/login', '/signup', '/forgot-password'].includes(pathname);
+    const isTransitPage = pathname?.startsWith('/dashboard/transit');
+    const isHeroPage = pathname === '/' || pathname === '/about';
 
     useEffect(() => {
-        const handleScroll = () => {
-            setScrolled(window.scrollY > 20);
-        };
+        const handleScroll = () => setScrolled(window.scrollY > 20);
         window.addEventListener('scroll', handleScroll);
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-    const pathname = usePathname();
-    const isAuthPage = ['/login', '/signup', '/forgot-password'].includes(pathname);
+    // Close mobile menu on route change
+    useEffect(() => { setIsOpen(false); }, [pathname]);
 
-    if (isAuthPage) return null;
+    if (isAuthPage || isTransitPage) return null;
+
+    const isTransparent = isHeroPage && !scrolled;
 
     return (
-        <header className={cn(
-            "fixed top-0 z-50 w-full transition-all duration-300 border-b",
-            scrolled
-                ? "bg-white/90 dark:bg-slate-950/90 backdrop-blur-md border-slate-200 dark:border-slate-800 py-2 shadow-sm"
-                : "bg-transparent border-transparent py-4"
-        )}>
-            <div className="container flex items-center justify-between">
-                {/* Mobile Menu & Logo */}
-                <div className="flex items-center gap-4 lg:gap-8">
-                    <Sheet open={isOpen} onOpenChange={setIsOpen}>
-                        <SheetTrigger asChild className="lg:hidden">
-                            <Button variant="ghost" size="icon" className="text-slate-700 dark:text-slate-200">
-                                <Menu className="h-6 w-6" />
-                                <span className="sr-only">Toggle menu</span>
-                            </Button>
-                        </SheetTrigger>
-                        <SheetContent side="left" className="w-[300px] border-r border-slate-200 dark:border-slate-800">
-                            <SheetHeader className="text-left mb-8">
-                                <SheetTitle className="text-2xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">
-                                    TrekBuddy
-                                </SheetTitle>
-                                <SheetDescription>
-                                    Explore Puddingcherry with AI.
-                                </SheetDescription>
-                            </SheetHeader>
-                            <nav className="flex flex-col gap-2">
-                                <Link href="/" onClick={() => setIsOpen(false)} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-lg font-medium">
-                                    <Compass className="w-5 h-5 text-cyan-500" />
-                                    Home
-                                </Link>
-                                <Link href="/dashboard/categories" onClick={() => setIsOpen(false)} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-lg font-medium">
-                                    <Map className="w-5 h-5 text-blue-500" />
-                                    Explore
-                                </Link>
-                                <Link href="/dashboard/planner" onClick={() => setIsOpen(false)} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-lg font-medium">
-                                    <Shield className="w-5 h-5 text-purple-500" />
-                                    Trip Planner
-                                </Link>
-                                <Link href="/dashboard/chat" onClick={() => setIsOpen(false)} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-lg font-medium">
-                                    <PhoneCall className="w-5 h-5 text-green-500" />
-                                    AI Guide
-                                </Link>
-                            </nav>
-                        </SheetContent>
-                    </Sheet>
+        <>
+            <header className={cn(
+                "fixed top-0 z-50 w-full transition-all duration-500",
+                isTransparent
+                    ? "bg-transparent border-transparent"
+                    : "bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-b border-slate-200/50 dark:border-slate-800/50 shadow-sm"
+            )}>
+                <div className="container h-20 flex items-center justify-between px-4 md:px-8 max-w-7xl mx-auto">
+                    {/* Left: Mobile Menu + Logo */}
+                    <div className="flex items-center gap-4">
+                        {/* Mobile hamburger */}
+                        <button
+                            onClick={() => setIsOpen(true)}
+                            className={cn(
+                                "lg:hidden p-2 rounded-xl transition-colors",
+                                isTransparent
+                                    ? "text-white/80 hover:bg-white/10"
+                                    : "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+                            )}
+                        >
+                            <Menu className="h-5 w-5" />
+                        </button>
 
-                    <Link href="/" className="flex items-center gap-2 group">
-                        <div className="relative w-8 h-8 flex items-center justify-center bg-gradient-to-br from-cyan-500 to-blue-600 rounded-lg text-white font-bold text-xl shadow-lg group-hover:shadow-cyan-500/25 transition-all">
-                            TB
-                        </div>
-                        <span className={cn(
-                            "font-bold text-xl tracking-tight transition-colors duration-300",
-                            scrolled ? "text-slate-900 dark:text-white" : "text-white md:text-white"
+                        {/* Logo */}
+                        <Link href="/" className="flex items-center gap-3 group">
+                            <div className={cn(
+                                "w-9 h-9 rounded-xl flex items-center justify-center font-bold text-base shadow-lg transition-all group-hover:scale-105",
+                                isTransparent
+                                    ? "bg-white/10 backdrop-blur-xl text-white border border-white/10"
+                                    : "bg-slate-900 dark:bg-white text-white dark:text-slate-900"
+                            )}>
+                                TB
+                            </div>
+                            <span className={cn(
+                                "font-bold text-xl tracking-tight transition-colors",
+                                isTransparent
+                                    ? "text-white"
+                                    : "text-slate-900 dark:text-white"
+                            )}>
+                                TrekBuddy
+                            </span>
+                        </Link>
+                    </div>
+
+                    {/* Center: Desktop Nav */}
+                    <nav className="hidden lg:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+                        <div className={cn(
+                            "flex items-center gap-1 p-1 rounded-full transition-all duration-300",
+                            isTransparent
+                                ? "bg-white/10 backdrop-blur-xl border border-white/10"
+                                : "bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/50 dark:border-slate-700/50"
                         )}>
-                            TrekBuddy
-                        </span>
-                    </Link>
+                            {NAV_LINKS.map((link) => {
+                                const isActive = pathname === link.href || (link.href !== '/' && pathname?.startsWith(link.href));
+                                return (
+                                    <Link
+                                        key={link.href}
+                                        href={link.href}
+                                        className={cn(
+                                            "relative px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200",
+                                            isActive
+                                                ? isTransparent
+                                                    ? "text-white bg-white/20"
+                                                    : "text-slate-900 dark:text-white bg-white dark:bg-slate-700 shadow-sm"
+                                                : isTransparent
+                                                    ? "text-white/70 hover:text-white hover:bg-white/10"
+                                                    : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700"
+                                        )}
+                                    >
+                                        {link.label}
+                                    </Link>
+                                );
+                            })}
+                        </div>
+                    </nav>
 
-                    {/* Desktop Navigation */}
-                    <div className="hidden lg:block">
-                        <NavigationMenu>
-                            <NavigationMenuList className="gap-1">
-                                <NavigationMenuItem>
-                                    <NavigationMenuLink asChild>
-                                        <Link href="/" className={cn(navigationMenuTriggerStyle(),
-                                            "bg-transparent hover:bg-white/10 hover:text-cyan-400 focus:bg-white/10 transition-colors",
-                                            scrolled ? "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800" : "text-slate-200 hover:text-white"
-                                        )}>
-                                            Home
+                    {/* Right: Auth */}
+                    <div className="flex items-center gap-3">
+                        {user ? (
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" className={cn(
+                                        "relative h-10 w-10 rounded-full p-0 overflow-hidden ring-2 transition-all",
+                                        isTransparent
+                                            ? "ring-white/20 hover:ring-white/40"
+                                            : "ring-slate-200 dark:ring-slate-700 hover:ring-slate-300 dark:hover:ring-slate-600"
+                                    )}>
+                                        <Avatar className="h-10 w-10">
+                                            <AvatarImage src={user.photoURL || ''} alt={user.displayName || 'User'} />
+                                            <AvatarFallback className="bg-gradient-to-br from-cyan-500 to-blue-600 text-white font-bold text-base">
+                                                {user.displayName?.charAt(0) || 'U'}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className="w-56 rounded-xl shadow-xl border-slate-200/80 dark:border-slate-800" align="end" forceMount>
+                                    <DropdownMenuLabel className="font-normal py-3">
+                                        <div className="flex flex-col space-y-1">
+                                            <p className="text-sm font-bold">{user.displayName}</p>
+                                            <p className="text-xs text-muted-foreground">{user.email}</p>
+                                        </div>
+                                    </DropdownMenuLabel>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem asChild className="py-2.5 cursor-pointer">
+                                        <Link href="/dashboard/profile">
+                                            <User className="mr-2 h-4 w-4" /> Profile
                                         </Link>
-                                    </NavigationMenuLink>
-                                </NavigationMenuItem>
-                                <NavigationMenuItem>
-                                    <NavigationMenuLink asChild>
-                                        <Link href="/dashboard/categories" className={cn(navigationMenuTriggerStyle(),
-                                            "bg-transparent hover:bg-white/10 hover:text-cyan-400 focus:bg-white/10 transition-colors",
-                                            scrolled ? "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800" : "text-slate-200 hover:text-white"
-                                        )}>
-                                            Explore
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem asChild className="py-2.5 cursor-pointer">
+                                        <Link href="/dashboard/settings">
+                                            <Settings className="mr-2 h-4 w-4" /> Settings
                                         </Link>
-                                    </NavigationMenuLink>
-                                </NavigationMenuItem>
-                                <NavigationMenuItem>
-                                    <NavigationMenuLink asChild>
-                                        <Link href="/dashboard/planner" className={cn(navigationMenuTriggerStyle(),
-                                            "bg-transparent hover:bg-white/10 hover:text-cyan-400 focus:bg-white/10 transition-colors",
-                                            scrolled ? "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800" : "text-slate-200 hover:text-white"
-                                        )}>
-                                            Planner
-                                        </Link>
-                                    </NavigationMenuLink>
-                                </NavigationMenuItem>
-                                <NavigationMenuItem>
-                                    <NavigationMenuLink asChild>
-                                        <Link href="/dashboard/chat" className={cn(navigationMenuTriggerStyle(),
-                                            "bg-transparent hover:bg-white/10 hover:text-cyan-400 focus:bg-white/10 transition-colors",
-                                            scrolled ? "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800" : "text-slate-200 hover:text-white"
-                                        )}>
-                                            AI Guide
-                                        </Link>
-                                    </NavigationMenuLink>
-                                </NavigationMenuItem>
-                            </NavigationMenuList>
-                        </NavigationMenu>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem onClick={logout} className="py-2.5 text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-900/10 cursor-pointer">
+                                        <LogOut className="mr-2 h-4 w-4" /> Log out
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        ) : (
+                            <div className="flex items-center gap-2">
+                                <Button variant="ghost" asChild className={cn(
+                                    "hidden sm:flex font-semibold rounded-full px-5 h-10 transition-all",
+                                    isTransparent
+                                        ? "text-white/80 hover:text-white hover:bg-white/10"
+                                        : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+                                )}>
+                                    <Link href="/login">Log in</Link>
+                                </Button>
+                                <Button asChild className={cn(
+                                    "font-bold rounded-full px-6 h-10 shadow-lg transition-all hover:scale-105",
+                                    isTransparent
+                                        ? "bg-white text-slate-900 hover:bg-white/90 shadow-white/10"
+                                        : "bg-gradient-to-r from-cyan-600 to-blue-600 text-white hover:from-cyan-700 hover:to-blue-700 shadow-cyan-500/15"
+                                )}>
+                                    <Link href="/signup">Sign Up</Link>
+                                </Button>
+                            </div>
+                        )}
                     </div>
                 </div>
+            </header>
 
-                {/* Right Actions */}
-                <div className="flex items-center gap-4">
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className={cn(
-                            "hidden sm:flex transition-colors",
-                            scrolled ? "text-slate-500 hover:text-slate-900" : "text-slate-300 hover:text-white hover:bg-white/10"
-                        )}
-                    >
-                        <Search className="h-5 w-5" />
-                    </Button>
-
-                    {user ? (
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="relative h-9 w-9 rounded-full ring-2 ring-white/20 hover:ring-white/50 transition-all p-0 overflow-hidden">
-                                    <Avatar className="h-9 w-9">
-                                        <AvatarImage src={user.photoURL || ''} alt={user.displayName || 'User'} />
-                                        <AvatarFallback className="bg-gradient-to-br from-cyan-500 to-blue-600 text-white font-medium">
-                                            {user.displayName?.charAt(0) || 'U'}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent className="w-56" align="end" forceMount>
-                                <DropdownMenuLabel className="font-normal">
-                                    <div className="flex flex-col space-y-1">
-                                        <p className="text-sm font-medium leading-none">{user.displayName}</p>
-                                        <p className="text-xs leading-none text-muted-foreground">
-                                            {user.email}
-                                        </p>
+            {/* Mobile Menu Overlay */}
+            <AnimatePresence>
+                {isOpen && (
+                    <>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 bg-slate-950/50 backdrop-blur-sm z-[60]"
+                            onClick={() => setIsOpen(false)}
+                        />
+                        <motion.div
+                            initial={{ x: '-100%' }}
+                            animate={{ x: 0 }}
+                            exit={{ x: '-100%' }}
+                            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                            className="fixed left-0 top-0 bottom-0 w-[300px] bg-white dark:bg-slate-950 z-[70] shadow-2xl"
+                        >
+                            <div className="flex flex-col h-full">
+                                <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-9 h-9 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center font-bold text-base">TB</div>
+                                        <span className="font-bold text-xl text-slate-900 dark:text-white tracking-tight">TrekBuddy</span>
                                     </div>
-                                </DropdownMenuLabel>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem asChild>
-                                    <Link href="/dashboard/profile" className="cursor-pointer">
-                                        <User className="mr-2 h-4 w-4" />
-                                        <span>Profile</span>
-                                    </Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem asChild>
-                                    <Link href="/dashboard/profile?tab=saved" className="cursor-pointer">
-                                        <Heart className="mr-2 h-4 w-4" />
-                                        <span>Saved Places</span>
-                                    </Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem asChild>
-                                    <Link href="/dashboard/planner" className="cursor-pointer">
-                                        <Map className="mr-2 h-4 w-4" />
-                                        <span>My Trips</span>
-                                    </Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={logout} className="text-red-500 hover:text-red-600 hover:bg-red-50 cursor-pointer">
-                                    <LogOut className="mr-2 h-4 w-4" />
-                                    <span>Log out</span>
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    ) : (
-                        <div className="flex items-center gap-3">
-                            <Button
-                                variant="ghost"
-                                asChild
-                                className={cn(
-                                    "hidden sm:flex hover:bg-white/10",
-                                    scrolled ? "text-slate-700 hover:bg-slate-100" : "text-white hover:text-white"
+                                    <button onClick={() => setIsOpen(false)} className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                                        <X className="w-5 h-5" />
+                                    </button>
+                                </div>
+
+                                <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+                                    {MOBILE_LINKS.map((link, i) => {
+                                        const isActive = pathname === link.href;
+                                        return (
+                                            <motion.div
+                                                key={link.href}
+                                                initial={{ opacity: 0, x: -20 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                transition={{ delay: i * 0.05 }}
+                                            >
+                                                <Link
+                                                    href={link.href}
+                                                    onClick={() => setIsOpen(false)}
+                                                    className={cn(
+                                                        "flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium transition-all",
+                                                        isActive
+                                                            ? "bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-950/30 dark:to-blue-950/30 text-cyan-700 dark:text-cyan-400 font-bold"
+                                                            : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900"
+                                                    )}
+                                                >
+                                                    <link.icon className="w-5 h-5" />
+                                                    {link.label}
+                                                </Link>
+                                            </motion.div>
+                                        );
+                                    })}
+                                </nav>
+
+                                {!user && (
+                                    <div className="p-4 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                                        <Button asChild className="w-full h-11 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-bold">
+                                            <Link href="/signup">Sign Up</Link>
+                                        </Button>
+                                        <Button variant="outline" asChild className="w-full h-11 rounded-xl font-semibold">
+                                            <Link href="/login">Log In</Link>
+                                        </Button>
+                                    </div>
                                 )}
-                            >
-                                <Link href="/login">Log in</Link>
-                            </Button>
-                            <Button
-                                asChild
-                                className="bg-white text-slate-900 hover:bg-slate-100 hover:scale-105 transition-all font-semibold rounded-full px-6 shadow-sm"
-                            >
-                                <Link href="/signup">Sign Up</Link>
-                            </Button>
-                        </div>
-                    )}
-                </div>
-            </div>
-        </header>
+                            </div>
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
+        </>
     );
 }
-

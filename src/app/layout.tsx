@@ -22,6 +22,7 @@ export const metadata: Metadata = {
 
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
+import { AIWidget } from "@/components/layout/AIWidget";
 import { ThemeProvider } from "@/components/theme-provider";
 
 import { AppLoader } from "@/components/layout/AppLoader";
@@ -48,6 +49,7 @@ export default function RootLayout({
               <main className="flex-1">
                 {children}
               </main>
+              <AIWidget />
               <Footer />
             </AppLoader>
             <Toaster />

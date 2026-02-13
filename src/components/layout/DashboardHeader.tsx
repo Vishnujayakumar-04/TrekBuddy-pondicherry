@@ -11,6 +11,7 @@ interface DashboardHeaderProps {
     backHref?: string;
     backLabel?: string;
     showHome?: boolean;
+    showBack?: boolean;
     children?: React.ReactNode;
 }
 
@@ -20,6 +21,7 @@ export function DashboardHeader({
     backHref,
     backLabel = 'Back',
     showHome = false,
+    showBack = true,
     children
 }: DashboardHeaderProps) {
     const router = useRouter();
@@ -37,21 +39,23 @@ export function DashboardHeader({
             {/* Navigation Row */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        className="group gap-2 pl-0 pr-4 hover:bg-transparent hover:text-cyan-600 dark:hover:text-cyan-400 transition-all text-slate-500 dark:text-slate-400 font-semibold p-0"
-                        onClick={handleBack}
-                    >
-                        <div className="p-2 rounded-full bg-slate-100 dark:bg-slate-800 group-hover:bg-cyan-100 dark:group-hover:bg-cyan-900/30 transition-colors">
-                            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-                        </div>
-                        <span className="text-sm">{backLabel}</span>
-                    </Button>
+                    {showBack && (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="group gap-2 pl-0 pr-4 hover:bg-transparent hover:text-cyan-600 dark:hover:text-cyan-400 transition-all text-slate-500 dark:text-slate-400 font-semibold p-0"
+                            onClick={handleBack}
+                        >
+                            <div className="p-2 rounded-full bg-slate-100 dark:bg-slate-800 group-hover:bg-cyan-100 dark:group-hover:bg-cyan-900/30 transition-colors">
+                                <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+                            </div>
+                            <span className="text-sm">{backLabel}</span>
+                        </Button>
+                    )}
 
                     {showHome && (
                         <>
-                            <span className="text-slate-300 dark:text-slate-700">/</span>
+                            {showBack && <span className="text-slate-300 dark:text-slate-700">/</span>}
                             <Button variant="ghost" size="sm" asChild className="gap-2 text-slate-500 hover:text-cyan-600 transition-colors">
                                 <Link href="/">
                                     <Home className="w-4 h-4" />

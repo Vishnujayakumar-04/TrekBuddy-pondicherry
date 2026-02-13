@@ -1,244 +1,509 @@
 'use client';
 
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect, useRef } from 'react';
+import { motion, useScroll, useTransform, useMotionValue, useSpring, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Input } from '@/components/ui/input';
+import { useRouter } from 'next/navigation';
+import { useAuthContext } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import {
-  Map,
-  Search,
-  MessageCircle,
-  Bus,
-  Umbrella,
-  Camera,
-  Hotel,
-  Utensils,
-  ArrowRight
+  Map, MessageCircle, Bus, ArrowRight, ArrowDown, Waves, Landmark, Utensils, Flower2, Umbrella,
+  Sparkles, Star, Users, Compass, Globe, ChevronRight, Heart, Camera, Zap
 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
+/* ─────────── DATA ─────────── */
+const FEATURES = [
+  { title: 'AI Trip Planner', desc: 'Tell us your vibe — adventure, culture, or zen — and our AI builds your dream itinerary in seconds.', icon: Map, href: '/dashboard/planner', gradient: 'from-cyan-500 to-blue-600', accent: 'cyan' },
+  { title: 'Smart AI Guide', desc: 'A personal travel concierge that answers anything about Puducherry — history, food, hidden gems.', icon: MessageCircle, href: '/dashboard/chat', gradient: 'from-violet-500 to-purple-600', accent: 'violet' },
+  { title: 'Local Transit Hub', desc: 'Real-time bikes, autos, buses, and trains. Navigate like a local from day one.', icon: Bus, href: '/dashboard/transit', gradient: 'from-amber-500 to-orange-600', accent: 'amber' },
+];
+
+const CATEGORIES = [
+  { id: 'beaches', title: 'Beaches', image: '/images/category-beach.jpg', icon: Waves, count: '5 Spots', color: 'from-cyan-400 to-blue-500' },
+  { id: 'heritage', title: 'Heritage', image: '/images/category-heritage.jpg', icon: Landmark, count: '12 Sites', color: 'from-amber-400 to-orange-500' },
+  { id: 'food', title: 'Food & Dining', image: '/images/category-food.jpg', icon: Utensils, count: '20+ Cafes', color: 'from-rose-400 to-pink-500' },
+  { id: 'spiritual', title: 'Spiritual', image: '/images/category-spiritual.jpg', icon: Flower2, count: '4 Centers', color: 'from-violet-400 to-purple-500' },
+  { id: 'nature', title: 'Nature', image: '/images/category-nature.jpg', icon: Umbrella, count: '8 Parks', color: 'from-emerald-400 to-teal-500' },
+];
+
+const STATS = [
+  { label: 'Places to Explore', value: 50, suffix: '+' },
+  { label: 'AI Itineraries', value: 1200, suffix: '+' },
+  { label: 'Happy Travelers', value: 3400, suffix: '+' },
+  { label: 'Local Insights', value: 100, suffix: '%' },
+];
+
+const TESTIMONIALS = [
+  { name: 'Aditi Sharma', role: 'Solo Traveler', text: 'TrekBuddy helped me discover hidden gems I would have never found. The AI planner created a perfect 3-day itinerary!', avatar: '🧳' },
+  { name: 'Rahul Menon', role: 'Family Trip', text: 'We used the transit feature to navigate the entire city by local buses. Saved us so much time and money!', avatar: '👨‍👩‍👧' },
+  { name: 'Sophie Laurent', role: 'Heritage Enthusiast', text: 'As a French history lover, the heritage trails recommended by the AI were absolutely insightful.', avatar: '🏛️' },
+];
+
+/* ─────────── COUNTER HOOK ─────────── */
+function useCounter(target: number, duration = 2000) {
+  const [count, setCount] = useState(0);
+  const [started, setStarted] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !started) setStarted(true);
+    }, { threshold: 0.5 });
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [started]);
+
+  useEffect(() => {
+    if (!started) return;
+    let start = 0;
+    const step = target / (duration / 16);
+    const timer = setInterval(() => {
+      start += step;
+      if (start >= target) { setCount(target); clearInterval(timer); }
+      else setCount(Math.floor(start));
+    }, 16);
+    return () => clearInterval(timer);
+  }, [started, target, duration]);
+
+  return { count, ref };
+}
+
+/* ─────────── FLOATING PARTICLES ─────────── */
+function FloatingParticles() {
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {Array.from({ length: 20 }).map((_, i) => (
+        <motion.div
+          key={i}
+          className="absolute w-1 h-1 bg-white/20 rounded-full"
+          style={{
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+          }}
+          animate={{
+            y: [0, -30, 0],
+            opacity: [0.2, 0.6, 0.2],
+            scale: [1, 1.5, 1],
+          }}
+          transition={{
+            duration: 3 + Math.random() * 4,
+            repeat: Infinity,
+            delay: Math.random() * 3,
+            ease: 'easeInOut',
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+/* ─────────── MAIN PAGE ─────────── */
 export default function HomePage() {
-  const [searchQuery, setSearchQuery] = useState('');
+  const router = useRouter();
+  const { user, loading } = useAuthContext();
+  const [hoveredFeature, setHoveredFeature] = useState<number | null>(null);
+  const [hoveredCat, setHoveredCat] = useState<string | null>(null);
+  const heroRef = useRef<HTMLDivElement>(null);
 
-  // Featured categories matching mobile app, updated icons/colors
-  const categories = [
-    { id: 'beaches', name: 'Beaches', icon: Umbrella, color: 'text-blue-500', bg: 'bg-blue-500/10' },
-    { id: 'temples', name: 'Temples', icon: '🛕', color: 'text-orange-500', bg: 'bg-orange-500/10' },
-    { id: 'hotels', name: 'Hotels', icon: Hotel, color: 'text-purple-500', bg: 'bg-purple-500/10' },
-    { id: 'restaurants', name: 'Restaurants', icon: Utensils, color: 'text-red-500', bg: 'bg-red-500/10' },
-    { id: 'places', name: 'Places', icon: Camera, color: 'text-teal-500', bg: 'bg-teal-500/10' },
-    { id: 'education', name: 'Education', icon: '🎓', color: 'text-yellow-500', bg: 'bg-yellow-500/10' },
-  ];
+  const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
+  const heroImageY = useTransform(scrollYProgress, [0, 1], ['0%', '30%']);
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
+  const heroScale = useTransform(scrollYProgress, [0, 1], [1, 1.1]);
+
+  const handleStartPlanning = () => {
+    if (loading) return;
+    router.push(user ? '/dashboard/planner' : '/login?redirect=/dashboard/planner');
+  };
 
   return (
-    <div className="flex flex-col min-h-screen bg-slate-50 dark:bg-slate-950">
-      {/* Hero Section */}
-      <section className="relative h-[90vh] flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 z-0">
-          <Image
-            src="/images/hero-bg.jpg"
-            alt="Puducherry Coastline"
-            fill
-            className="object-cover object-center"
-            priority
-          />
-          {/* Gradient Overlays for Readability */}
-          <div className="absolute inset-0 bg-slate-900/40" />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/20 to-transparent" />
-        </div>
+    <div className="flex flex-col min-h-screen bg-white dark:bg-slate-950 overflow-x-hidden">
 
-        <div className="relative z-10 container flex flex-col items-center text-center px-4 max-w-5xl mx-auto">
+      {/* ═══════════════ 1. CINEMATIC HERO ═══════════════ */}
+      <section ref={heroRef} className="relative h-screen flex items-center justify-center overflow-hidden">
+        {/* Parallax background */}
+        <motion.div className="absolute inset-0 z-0" style={{ y: heroImageY, scale: heroScale }}>
+          <div className="absolute inset-0 bg-slate-900" />
+          <Image src="/images/hero-bg.jpg" alt="Puducherry Coastline" fill className="object-cover object-center" priority />
+        </motion.div>
+
+        {/* Multi-layer cinematic gradients */}
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/60 via-slate-950/20 to-slate-950/80 z-[1]" />
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/50 via-transparent to-transparent z-[1]" />
+
+        {/* Floating particles */}
+        <FloatingParticles />
+
+        {/* Animated vignette edges */}
+        <div className="absolute inset-0 z-[2] shadow-[inset_0_0_150px_60px_rgba(0,0,0,0.4)]" />
+
+        {/* Hero Content */}
+        <motion.div style={{ opacity: heroOpacity }} className="relative z-10 container mx-auto px-4 text-center max-w-5xl">
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
+            transition={{ duration: 1.2, ease: [0.25, 0.46, 0.45, 0.94] }}
             className="space-y-8"
           >
-            <div className="inline-flex items-center gap-2.5 px-5 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-cyan-100 text-sm font-semibold tracking-wide shadow-2xl">
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-500"></span>
-              </span>
-              The Official Travel Companion
-            </div>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.3, duration: 0.8 }}
+            >
+              <Badge className="bg-white/10 hover:bg-white/20 text-white px-5 py-2 text-sm uppercase tracking-[0.3em] backdrop-blur-xl border-white/10 font-medium rounded-full">
+                <Compass className="w-3.5 h-3.5 mr-2 animate-spin" style={{ animationDuration: '8s' }} />
+                Welcome to Puducherry
+              </Badge>
+            </motion.div>
 
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tight text-white drop-shadow-lg leading-[1.05]">
-              Discover the <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-200 via-white to-blue-200 pb-2">
-                French Riviera
-              </span> of the East
+            <h1 className="text-5xl md:text-7xl lg:text-[5.5rem] font-black tracking-tight text-white leading-[0.95]">
+              <motion.span
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5, duration: 0.8 }}
+                className="block"
+              >
+                The French Riviera
+              </motion.span>
+              <motion.span
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.7, duration: 0.8 }}
+                className="block bg-gradient-to-r from-cyan-300 via-blue-400 to-violet-400 bg-clip-text text-transparent"
+              >
+                of the East
+              </motion.span>
             </h1>
 
-            <p className="text-xl md:text-2xl text-slate-100 max-w-2xl mx-auto font-medium leading-relaxed drop-shadow-md text-balance opacity-90">
-              Your intelligent guide to Puducherry&apos;s golden beaches, colonial heritage, and spiritual sanctuaries.
-            </p>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1, duration: 0.8 }}
+              className="text-lg md:text-xl text-white/70 max-w-2xl mx-auto font-medium leading-relaxed"
+            >
+              Colonial heritage, spiritual tranquility, and coastal vibes — explore Puducherry like never before with AI-powered travel intelligence.
+            </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.3, duration: 0.8 }}
+              className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4"
+            >
+              <Button
+                size="lg"
+                onClick={handleStartPlanning}
+                disabled={loading}
+                className="group rounded-full px-10 h-16 text-lg font-bold bg-white text-slate-900 hover:bg-white shadow-[0_0_60px_-15px_rgba(255,255,255,0.3)] hover:shadow-[0_0_80px_-15px_rgba(255,255,255,0.5)] transition-all duration-500 hover:scale-105"
+              >
+                {loading ? 'Loading...' : 'Start Your Journey'}
+                {!loading && <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />}
+              </Button>
+              <Link href="/about">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="rounded-full px-8 h-16 text-lg font-semibold border-white/20 text-white hover:text-white hover:bg-white/10 backdrop-blur-md"
+                >
+                  <Globe className="w-5 h-5 mr-2" />
+                  Discover Puducherry
+                </Button>
+              </Link>
+            </motion.div>
           </motion.div>
+        </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.6, ease: "easeOut" }}
-            className="w-full max-w-xl mx-auto mt-12"
-          >
-            <div className="relative group">
-              {/* Glow Effect */}
-              <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500 rounded-full opacity-40 blur-lg group-hover:opacity-75 transition duration-700 animate-tilt"></div>
-
-              <div className="relative flex items-center p-2 bg-white/95 backdrop-blur-2xl rounded-full shadow-2xl ring-1 ring-white/50 transition-all focus-within:ring-4 focus-within:ring-cyan-500/20 focus-within:scale-[1.02]">
-                <div className="pl-5 text-slate-400">
-                  <Search className="w-6 h-6" />
-                </div>
-                <Input
-                  type="text"
-                  placeholder="Where do you want to go?"
-                  className="flex-1 border-none bg-transparent text-slate-900 placeholder:text-slate-400 focus-visible:ring-0 focus-visible:ring-offset-0 text-lg h-14 px-4 font-medium"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-                <Link href={searchQuery ? `/dashboard/search?q=${searchQuery}` : '/dashboard/categories'}>
-                  <Button size="lg" className="rounded-full px-8 bg-slate-900 hover:bg-black text-white font-bold shadow-lg h-14 tracking-wide text-base transition-all hover:scale-105 active:scale-95">
-                    Search
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Scroll Indicator */}
+        {/* Animated scroll indicator */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 1.5, duration: 1 }}
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-slate-300/80"
+          transition={{ delay: 2, duration: 1 }}
+          className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-3"
         >
-          <span className="text-xs uppercase tracking-widest">Explore</span>
-          <div className="w-[1px] h-12 bg-gradient-to-b from-slate-300/0 via-slate-300/50 to-slate-300/0"></div>
+          <span className="text-[10px] uppercase tracking-[0.3em] text-white/40 font-semibold">Scroll</span>
+          <motion.div
+            animate={{ y: [0, 8, 0] }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+          >
+            <ArrowDown className="w-4 h-4 text-white/40" />
+          </motion.div>
         </motion.div>
       </section>
 
-      {/* Quick Actions - Floating Cards */}
-      <section className="container -mt-24 md:-mt-32 relative z-20 pb-20 px-4 md:px-6 max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
-          <Link href="/dashboard/planner" className="group h-full">
-            <Card className="h-full border-none shadow-2xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl hover:-translate-y-2 hover:shadow-cyan-500/20 transition-all duration-300 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-2xl -mr-10 -mt-10 transition-opacity opacity-0 group-hover:opacity-100" />
+      {/* ═══════════════ 2. FEATURE CARDS (Overlapping Hero) ═══════════════ */}
+      <section className="relative z-20 -mt-24 pb-24">
+        <div className="container mx-auto px-4 md:px-6 max-w-6xl">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {FEATURES.map((feature, i) => (
+              <Link key={feature.title} href={feature.href}>
+                <motion.div
+                  initial={{ opacity: 0, y: 50 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.15, type: 'spring', bounce: 0.25 }}
+                  onHoverStart={() => setHoveredFeature(i)}
+                  onHoverEnd={() => setHoveredFeature(null)}
+                  className="group relative h-full bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-xl hover:shadow-2xl transition-all duration-500 overflow-hidden cursor-pointer"
+                >
+                  {/* Hover gradient reveal */}
+                  <div className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
 
-              <CardContent className="flex flex-col items-center text-center p-8 space-y-6">
-                <div className="p-5 bg-cyan-50 dark:bg-cyan-950/30 rounded-2xl text-cyan-600 dark:text-cyan-400 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 ring-1 ring-cyan-100 dark:ring-cyan-900/50">
-                  <Map className="w-8 h-8" />
-                </div>
-                <div className="space-y-2">
-                  <h3 className="font-bold text-xl text-slate-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">Trip Planner</h3>
-                  <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">Create your perfect custom itinerary in seconds with drag-and-drop ease.</p>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
+                  <div className="relative z-10 p-8">
+                    {/* Icon */}
+                    <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center text-white mb-6 shadow-lg group-hover:bg-white/20 group-hover:shadow-none transition-all`}>
+                      <feature.icon className="w-7 h-7" />
+                    </div>
 
-          <Link href="/dashboard/chat" className="group h-full">
-            <Card className="h-full border-none shadow-2xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl hover:-translate-y-2 hover:shadow-purple-500/20 transition-all duration-300 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-2xl -mr-10 -mt-10 transition-opacity opacity-0 group-hover:opacity-100" />
-              <div className="absolute top-4 right-4">
-                <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider shadow-lg shadow-purple-500/30">New</span>
-              </div>
-              <CardContent className="flex flex-col items-center text-center p-8 space-y-6">
-                <div className="p-5 bg-purple-50 dark:bg-purple-950/30 rounded-2xl text-purple-600 dark:text-purple-400 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300 ring-1 ring-purple-100 dark:ring-purple-900/50">
-                  <MessageCircle className="w-8 h-8" />
-                </div>
-                <div className="space-y-2">
-                  <h3 className="font-bold text-xl text-slate-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">AI Guide</h3>
-                  <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">Chat with our smart assistant for instant tips, history, and food recommendations.</p>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-3 group-hover:text-white transition-colors">
+                      {feature.title}
+                    </h3>
+                    <p className="text-slate-500 group-hover:text-white/80 leading-relaxed mb-6 transition-colors text-sm">
+                      {feature.desc}
+                    </p>
 
-          <Link href="/dashboard/transit/bus" className="group h-full">
-            <Card className="h-full border-none shadow-2xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl hover:-translate-y-2 hover:shadow-teal-500/20 transition-all duration-300 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-teal-500/10 rounded-full blur-2xl -mr-10 -mt-10 transition-opacity opacity-0 group-hover:opacity-100" />
-              <CardContent className="flex flex-col items-center text-center p-8 space-y-6">
-                <div className="p-5 bg-teal-50 dark:bg-teal-950/30 rounded-2xl text-teal-600 dark:text-teal-400 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 ring-1 ring-teal-100 dark:ring-teal-900/50">
-                  <Bus className="w-8 h-8" />
-                </div>
-                <div className="space-y-2">
-                  <h3 className="font-bold text-xl text-slate-900 dark:text-white group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">Transit</h3>
-                  <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">Find local bus routes, bike rentals, and auto fares easily.</p>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
+                    <div className="flex items-center text-sm font-bold text-slate-900 dark:text-white group-hover:text-white transition-colors">
+                      Explore
+                      <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </div>
+                </motion.div>
+              </Link>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* Categories Grid */}
-      <section className="py-24 bg-white dark:bg-slate-950 relative overflow-hidden">
-        {/* Decorative background elements */}
-        <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-slate-200 dark:via-slate-800 to-transparent" />
-        <div className="absolute -top-40 right-0 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl" />
+      {/* ═══════════════ 3. ANIMATED STATS BAR ═══════════════ */}
+      <section className="py-20 bg-slate-950 dark:bg-slate-900 relative overflow-hidden">
+        {/* Animated bg */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:48px_48px]" />
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-500/5 rounded-full blur-[100px]" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-violet-500/5 rounded-full blur-[100px]" />
 
-        <div className="container px-4 md:px-6 max-w-7xl mx-auto relative z-10">
-          <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
-            <div className="max-w-2xl space-y-4">
-              <h2 className="text-sm font-bold text-cyan-600 dark:text-cyan-400 uppercase tracking-widest flex items-center gap-2">
-                <span className="w-8 h-px bg-cyan-600 dark:bg-cyan-400"></span> Curated Collections
+        <div className="container mx-auto px-4 md:px-6 max-w-5xl relative z-10">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            {STATS.map((stat, i) => {
+              const { count, ref } = useCounter(stat.value);
+              return (
+                <motion.div
+                  key={stat.label}
+                  ref={ref}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                  className="text-center"
+                >
+                  <div className="text-4xl md:text-5xl font-black text-white mb-2 tabular-nums">
+                    {count.toLocaleString()}{stat.suffix}
+                  </div>
+                  <div className="text-sm text-slate-400 font-medium tracking-wide">{stat.label}</div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════ 4. IMMERSIVE CATEGORIES ═══════════════ */}
+      <section className="py-24 bg-slate-50 dark:bg-slate-950 overflow-hidden">
+        <div className="container mx-auto px-4 md:px-6 max-w-7xl">
+          <div className="flex flex-col md:flex-row justify-between items-end mb-14 gap-6">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="space-y-4 max-w-2xl"
+            >
+              <Badge className="bg-cyan-100 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-400 border-cyan-200 dark:border-cyan-800 px-4 py-1 text-xs font-bold uppercase tracking-widest rounded-full">
+                Curated For You
+              </Badge>
+              <h2 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
+                Explore by
+                <span className="bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent"> Interest</span>
               </h2>
-              <h3 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white tracking-tight">
-                Explore by <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-600 to-blue-600">Interest</span>
-              </h3>
-              <p className="text-slate-500 dark:text-slate-400 text-lg leading-relaxed max-w-xl">
-                Whether you&apos;re looking for spiritual peace, adventure, or culinary delights, we&apos;ve organized the best spots for you.
+              <p className="text-slate-500 dark:text-slate-400 text-lg">
+                Handpicked collections of the best Puducherry has to offer.
               </p>
-            </div>
+            </motion.div>
             <Link href="/dashboard/categories">
-              <Button variant="outline" className="group rounded-full px-8 h-12 border-slate-200 dark:border-slate-800 hover:border-cyan-500 hover:text-cyan-600 dark:hover:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-cyan-950/30 transition-all shadow-sm">
-                View All Categories
-                <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+              <Button variant="outline" className="rounded-full px-6 h-12 font-bold border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
+                View All <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </Link>
           </div>
 
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-50px" }}
-            variants={{
-              hidden: { opacity: 0 },
-              visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
-            }}
-            className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6"
-          >
-            {categories.map((cat) => (
-              <Link key={cat.id} href={`/dashboard/categories/${cat.id}`}>
-                <motion.div
-                  variants={{
-                    hidden: { y: 20, opacity: 0 },
-                    visible: { y: 0, opacity: 1 }
-                  }}
-                  whileHover={{ y: -8 }}
-                  className="h-full"
-                >
-                  <Card className="h-full border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-xl hover:shadow-cyan-500/5 transition-all duration-300 bg-white dark:bg-slate-900 group relative overflow-hidden">
-                    <div className={`absolute top-0 right-0 w-16 h-16 rounded-full blur-xl opacity-0 group-hover:opacity-40 transition-opacity duration-300 ${cat.bg}`} />
+          {/* Horizontal scroll categories */}
+          <div className="w-full overflow-x-auto pb-8 -mx-4 px-4 hide-scrollbar">
+            <div className="flex gap-5 w-max">
+              {CATEGORIES.map((cat, i) => (
+                <Link key={cat.id} href={`/dashboard/categories/${cat.id}`}>
+                  <motion.div
+                    initial={{ opacity: 0, x: 40 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.1, type: 'spring', bounce: 0.2 }}
+                    onHoverStart={() => setHoveredCat(cat.id)}
+                    onHoverEnd={() => setHoveredCat(null)}
+                    className="group relative w-[280px] md:w-[320px] h-[420px] rounded-3xl overflow-hidden cursor-pointer shadow-sm hover:shadow-2xl transition-shadow duration-500"
+                  >
+                    {/* Background */}
+                    <div className="absolute inset-0 bg-slate-200 dark:bg-slate-800" />
+                    <Image src={cat.image} alt={cat.title} fill className="object-cover transition-transform duration-700 ease-out group-hover:scale-110" />
 
-                    <CardContent className="flex flex-col items-center justify-center p-6 text-center h-full gap-5 relative z-10">
-                      <div className={`p-4 rounded-2xl ${cat.bg} ${cat.color} group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300`}>
-                        {typeof cat.icon === 'string' ? <span className="text-2xl">{cat.icon}</span> : <cat.icon className="w-6 h-6" />}
+                    {/* Overlays */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent" />
+                    <div className={`absolute inset-0 bg-gradient-to-br ${cat.color} opacity-0 group-hover:opacity-20 transition-opacity duration-500`} />
+
+                    {/* Count badge */}
+                    <div className="absolute top-5 left-5 z-10">
+                      <Badge className="bg-white/15 hover:bg-white/25 border-none text-white backdrop-blur-xl text-xs font-bold px-3 py-1 rounded-lg">
+                        {cat.count}
+                      </Badge>
+                    </div>
+
+                    {/* Content */}
+                    <div className="absolute bottom-0 left-0 right-0 p-7 z-10">
+                      <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${cat.color} flex items-center justify-center text-white mb-3 shadow-lg group-hover:scale-110 transition-transform`}>
+                        <cat.icon className="w-6 h-6" />
                       </div>
-                      <span className="font-bold text-slate-700 dark:text-slate-200 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">
-                        {cat.name}
-                      </span>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              </Link>
+                      <h3 className="text-2xl font-bold text-white mb-2">{cat.title}</h3>
+                      <div className={`h-1 rounded-full bg-gradient-to-r ${cat.color} transition-all duration-500 ${hoveredCat === cat.id ? 'w-20' : 'w-10'}`} />
+
+                      {/* Hover CTA */}
+                      <div className={`flex items-center gap-2 text-sm font-bold text-white mt-3 transition-all duration-300 ${hoveredCat === cat.id ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}`}>
+                        Explore <ArrowRight className="w-4 h-4" />
+                      </div>
+                    </div>
+                  </motion.div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════ 5. TESTIMONIALS ═══════════════ */}
+      <section className="py-24 bg-white dark:bg-slate-900 relative overflow-hidden">
+        <div className="absolute top-20 right-0 w-96 h-96 bg-cyan-500/5 rounded-full blur-[120px]" />
+
+        <div className="container mx-auto px-4 md:px-6 max-w-6xl relative z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16 space-y-4"
+          >
+            <Badge className="bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800 px-4 py-1 text-xs font-bold uppercase tracking-widest rounded-full">
+              <Star className="w-3 h-3 mr-1.5 fill-amber-500" />
+              Loved by Travelers
+            </Badge>
+            <h2 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tight">
+              Stories from the Road
+            </h2>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {TESTIMONIALS.map((t, i) => (
+              <motion.div
+                key={t.name}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.15, type: 'spring', bounce: 0.2 }}
+                className="group bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-7 border border-slate-200/80 dark:border-slate-700/50 hover:border-cyan-200 dark:hover:border-cyan-800 transition-all hover:shadow-lg"
+              >
+                {/* Stars */}
+                <div className="flex gap-1 mb-5">
+                  {[...Array(5)].map((_, j) => (
+                    <Star key={j} className="w-4 h-4 fill-amber-400 text-amber-400" />
+                  ))}
+                </div>
+
+                <p className="text-slate-600 dark:text-slate-300 leading-relaxed mb-6 text-sm">
+                  &ldquo;{t.text}&rdquo;
+                </p>
+
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center text-xl">
+                    {t.avatar}
+                  </div>
+                  <div>
+                    <p className="font-bold text-sm text-slate-900 dark:text-white">{t.name}</p>
+                    <p className="text-xs text-slate-500">{t.role}</p>
+                  </div>
+                </div>
+              </motion.div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════ 6. CINEMATIC CTA ═══════════════ */}
+      <section className="relative py-32 overflow-hidden">
+        {/* Background */}
+        <div className="absolute inset-0 bg-slate-950" />
+        <div className="absolute inset-0 bg-gradient-to-br from-cyan-950/50 via-slate-950 to-violet-950/50" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(6,182,212,0.1),transparent_60%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_50%,rgba(139,92,246,0.08),transparent_60%)]" />
+
+        {/* Grid pattern */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:64px_64px]" />
+
+        <div className="container mx-auto px-4 text-center relative z-10 max-w-4xl">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="space-y-8"
+          >
+            <motion.div
+              animate={{ rotate: [0, 5, -5, 0] }}
+              transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+              className="inline-block"
+            >
+              <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white shadow-2xl shadow-cyan-500/20 mx-auto">
+                <Sparkles className="w-10 h-10" />
+              </div>
+            </motion.div>
+
+            <h2 className="text-4xl md:text-6xl font-black tracking-tight text-white leading-tight">
+              Experience Puducherry
+              <br />
+              <span className="bg-gradient-to-r from-cyan-400 to-violet-400 bg-clip-text text-transparent">
+                Like Never Before
+              </span>
+            </h2>
+            <p className="text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed">
+              TrekBuddy combines local insights with AI intelligence to craft your perfect itinerary. Don&apos;t just visit — explore smarter.
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6">
+              <Button
+                size="lg"
+                onClick={handleStartPlanning}
+                className="group rounded-full px-10 h-16 text-lg font-bold bg-gradient-to-r from-cyan-500 to-blue-600 text-white hover:from-cyan-600 hover:to-blue-700 shadow-2xl shadow-cyan-500/20 hover:shadow-cyan-500/40 transition-all duration-500 hover:scale-105"
+              >
+                <Zap className="w-5 h-5 mr-2" />
+                Plan Your Trip with AI
+              </Button>
+              <Link href="/dashboard/chat">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="rounded-full px-8 h-16 text-lg font-semibold border-slate-700 text-white hover:text-white hover:bg-white/5 hover:border-slate-600"
+                >
+                  Ask AI a Question
+                  <ArrowRight className="ml-2 w-5 h-5" />
+                </Button>
+              </Link>
+            </div>
           </motion.div>
         </div>
       </section>
+
     </div>
   );
 }
