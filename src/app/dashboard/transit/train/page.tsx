@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Train, Clock, MapPin, Calendar, ExternalLink, Loader2, ArrowRight, Sparkles } from 'lucide-react';
+import { Train, Clock, MapPin, Calendar, ExternalLink, Loader2, ArrowRight, Sparkles, Navigation } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { DashboardHeader } from '@/components/layout/DashboardHeader';
 import { getTransitItems } from '@/services/transitService';
@@ -27,6 +27,9 @@ export default function TrainPage({ embedded = false }: { embedded?: boolean }) 
     const [transitData, setTransitData] = useState<TransitItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [trainFilter, setTrainFilter] = useState<'all' | 'incoming' | 'outgoing'>('all');
+    const [fromFilter, setFromFilter] = useState('');
+    const [toFilter, setToFilter] = useState('');
 
     useEffect(() => {
         async function loadData() {
@@ -46,7 +49,71 @@ export default function TrainPage({ embedded = false }: { embedded?: boolean }) 
     }, []);
 
     const station = transitData.find(d => d.type === 'station');
-    const routes = transitData.filter(d => d.type === 'route' && (d.subCategory === 'Express' || d.subCategory === 'Passenger'));
+    const allRoutes = transitData.filter(d => d.type === 'route' && (d.subCategory === 'Express' || d.subCategory === 'Passenger'));
+
+    // Filter routes by direction
+    const incomingRoutes = allRoutes.filter(route =>
+        route.to?.toLowerCase().includes('pondi') || route.to?.toLowerCase().includes('pdy')
+    );
+    const outgoingRoutes = allRoutes.filter(route =>
+        route.from?.toLowerCase().includes('pondi') || route.from?.toLowerCase().includes('pdy')
+    );
+
+    // Apply from/to text filters
+    const applyTextFilters = (routes: TransitItem[]) => {
+        return routes.filter(route => {
+            const fromMatch = !fromFilter ||
+                route.from?.toLowerCase().includes(fromFilter.toLowerCase());
+
+            const toMatch = !toFilter ||
+                route.to?.toLowerCase().includes(toFilter.toLowerCase());
+
+            return fromMatch && toMatch;
+        });
+    };
+
+    const getFilteredRoutes = () => {
+        let routes = allRoutes;
+        if (trainFilter === 'incoming') routes = incomingRoutes;
+        if (trainFilter === 'outgoing') routes = outgoingRoutes;
+        return applyTextFilters(routes);
+    };
+
+    const handleLocateMe = () => {
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition((position) => {
+                const { latitude, longitude } = position.coords;
+                const knownLocations = [
+                    { name: 'Puducherry', lat: 11.9266, lng: 79.8253 },
+                    { name: 'Villupuram', lat: 11.9401, lng: 79.4861 },
+                    { name: 'Chennai', lat: 13.0827, lng: 80.2707 },
+                    { name: 'Bangalore', lat: 12.9716, lng: 77.5946 },
+                    { name: 'Tirupati', lat: 13.6288, lng: 79.4192 },
+                    { name: 'New Delhi', lat: 28.6139, lng: 77.2090 },
+                    { name: 'Mumbai', lat: 19.0760, lng: 72.8777 },
+                    { name: 'Kolkata', lat: 22.5726, lng: 88.3639 },
+                    { name: 'Hyderabad', lat: 17.3850, lng: 78.4867 },
+                    { name: 'Bhubaneswar', lat: 20.2961, lng: 85.8245 }
+                ];
+
+                const nearest = knownLocations.reduce((prev, curr) => {
+                    const getDist = (loc: typeof knownLocations[0]) => Math.sqrt(Math.pow(loc.lat - latitude, 2) + Math.pow(loc.lng - longitude, 2));
+                    return getDist(curr) < getDist(prev) ? curr : prev;
+                });
+
+                if (nearest) {
+                    setFromFilter(nearest.name);
+                }
+            }, (error) => {
+                console.error("Geolocation error:", error);
+                alert("Could not get your location. Please ensure location services are enabled.");
+            });
+        } else {
+            alert("Geolocation is not supported by your browser.");
+        }
+    };
+
+    const filteredRoutes = getFilteredRoutes();
 
     return (
         <div className={embedded ? "space-y-10" : "container mx-auto py-8 px-4 max-w-5xl space-y-10"}>
@@ -134,23 +201,116 @@ export default function TrainPage({ embedded = false }: { embedded?: boolean }) 
 
                     {/* Train Routes */}
                     <div className="space-y-6">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="h-1.5 w-6 bg-gradient-to-r from-purple-400 to-violet-500 rounded-full" />
-                                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Popular Routes</h2>
+                        <div className="flex flex-col gap-6">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="h-1.5 w-6 bg-gradient-to-r from-purple-400 to-violet-500 rounded-full" />
+                                    <h2 className="text-xl font-bold text-slate-900 dark:text-white">Popular Routes</h2>
+                                </div>
+                                <Badge variant="secondary" className="bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 font-medium text-xs rounded-lg border-0">
+                                    {filteredRoutes.length} trains
+                                </Badge>
                             </div>
-                            <Badge variant="secondary" className="bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 font-medium text-xs rounded-lg border-0">
-                                {routes.length} trains
-                            </Badge>
+
+                            {/* From/To Search Fields */}
+                            <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
+                                <div className="grid md:grid-cols-2 gap-4">
+                                    <div className="relative">
+                                        <label className="text-sm font-semibold text-slate-600 dark:text-slate-400 mb-2 block uppercase tracking-wider">
+                                            From
+                                        </label>
+                                        <div className="relative">
+                                            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-600" />
+                                            <input
+                                                type="text"
+                                                value={fromFilter}
+                                                onChange={(e) => setFromFilter(e.target.value)}
+                                                placeholder="Filter by origin station..."
+                                                className="w-full pl-11 pr-12 py-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
+                                            />
+                                            <button
+                                                onClick={handleLocateMe}
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-emerald-600 transition-colors group"
+                                                title="Use my current location"
+                                            >
+                                                <Navigation className="w-5 h-5 group-hover:fill-emerald-600 transition-colors" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="relative">
+                                        <label className="text-sm font-semibold text-slate-600 dark:text-slate-400 mb-2 block uppercase tracking-wider">
+                                            To
+                                        </label>
+                                        <div className="relative">
+                                            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-orange-600" />
+                                            <input
+                                                type="text"
+                                                value={toFilter}
+                                                onChange={(e) => setToFilter(e.target.value)}
+                                                placeholder="Filter by destination station..."
+                                                className="w-full pl-11 pr-4 py-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 outline-none transition-all"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                                {(fromFilter || toFilter) && (
+                                    <div className="mt-4 flex items-center justify-between">
+                                        <p className="text-sm text-slate-600 dark:text-slate-400">
+                                            Showing filtered routes
+                                        </p>
+                                        <button
+                                            onClick={() => { setFromFilter(''); setToFilter(''); }}
+                                            className="text-sm text-purple-600 hover:text-purple-700 font-semibold"
+                                        >
+                                            Clear Filters
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="flex items-center justify-center gap-2 flex-wrap">
+                                <Button
+                                    variant={trainFilter === 'all' ? 'default' : 'outline'}
+                                    size="sm"
+                                    onClick={() => setTrainFilter('all')}
+                                    className={`rounded-lg font-semibold text-xs transition-all ${trainFilter === 'all'
+                                        ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-md shadow-purple-500/20'
+                                        : 'border-slate-200 dark:border-slate-700 hover:border-purple-200 dark:hover:border-purple-800'
+                                        }`}
+                                >
+                                    All Trains
+                                </Button>
+                                <Button
+                                    variant={trainFilter === 'incoming' ? 'default' : 'outline'}
+                                    size="sm"
+                                    onClick={() => setTrainFilter('incoming')}
+                                    className={`rounded-lg font-semibold text-xs transition-all ${trainFilter === 'incoming'
+                                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-500/20'
+                                        : 'border-slate-200 dark:border-slate-700 hover:border-emerald-200 dark:hover:border-emerald-800'
+                                        }`}
+                                >
+                                    Incoming
+                                </Button>
+                                <Button
+                                    variant={trainFilter === 'outgoing' ? 'default' : 'outline'}
+                                    size="sm"
+                                    onClick={() => setTrainFilter('outgoing')}
+                                    className={`rounded-lg font-semibold text-xs transition-all ${trainFilter === 'outgoing'
+                                        ? 'bg-orange-600 hover:bg-orange-700 text-white shadow-md shadow-orange-500/20'
+                                        : 'border-slate-200 dark:border-slate-700 hover:border-orange-200 dark:hover:border-orange-800'
+                                        }`}
+                                >
+                                    Outgoing
+                                </Button>
+                            </div>
                         </div>
 
                         <motion.div
                             variants={containerVariants}
                             initial="hidden"
                             animate="show"
-                            className="space-y-4"
                         >
-                            {routes.map((train) => (
+                            {filteredRoutes.map((train) => (
                                 <motion.div
                                     key={train.id}
                                     variants={itemVariants}
@@ -181,13 +341,11 @@ export default function TrainPage({ embedded = false }: { embedded?: boolean }) 
                                             {/* Journey route */}
                                             <div className="flex items-center gap-3 bg-gradient-to-r from-slate-50 to-slate-100/50 dark:from-slate-800/40 dark:to-slate-800/20 p-3 rounded-xl w-fit">
                                                 <span className="font-semibold text-sm text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900 px-3 py-1 rounded-lg shadow-sm">{train.from}</span>
-                                                <div className="flex items-center gap-1">
-                                                    <div className="w-2 h-2 rounded-full bg-purple-400" />
-                                                    <div className="w-12 h-[2px] bg-gradient-to-r from-purple-400 to-violet-400 rounded-full" />
-                                                    <ArrowRight className="w-3.5 h-3.5 text-purple-500" />
-                                                    <div className="w-12 h-[2px] bg-gradient-to-r from-violet-400 to-indigo-400 rounded-full" />
-                                                    <div className="w-2 h-2 rounded-full bg-indigo-400" />
-                                                </div>
+                                                <div className="w-2 h-2 rounded-full bg-purple-400" />
+                                                <div className="w-12 h-[2px] bg-gradient-to-r from-purple-400 to-violet-400 rounded-full" />
+                                                <ArrowRight className="w-3.5 h-3.5 text-purple-500" />
+                                                <div className="w-12 h-[2px] bg-gradient-to-r from-violet-400 to-indigo-400 rounded-full" />
+                                                <div className="w-2 h-2 rounded-full bg-indigo-400" />
                                                 <span className="font-semibold text-sm text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900 px-3 py-1 rounded-lg shadow-sm">{train.to}</span>
                                             </div>
                                         </div>

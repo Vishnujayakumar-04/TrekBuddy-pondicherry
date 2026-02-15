@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Send, Bot, User, Trash2, Sparkles, Zap } from 'lucide-react';
+import { Send, Bot, User, Trash2, Sparkles, Zap, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Message {
@@ -18,17 +18,17 @@ interface Message {
 import { getAIResponse } from '@/services/chatService';
 
 const SUGGESTION_CHIPS = [
-    { label: '🏖️ Best beaches', query: 'What are the best beaches in Puducherry?' },
-    { label: '🍽️ Where to eat', query: 'Recommend the best restaurants in Puducherry' },
-    { label: '🛕 Temples', query: 'Tell me about famous temples in Puducherry' },
-    { label: '🗺️ 3-day plan', query: 'Create a 3-day itinerary for Puducherry' },
+    { label: 'What are the best beaches in Pondicherry?', query: 'What are the best beaches in Pondicherry?' },
+    { label: 'Recommend a 2-day itinerary', query: 'Create a 2-day itinerary for Pondicherry' },
+    { label: 'Best French restaurants to try', query: 'Recommend the best French restaurants in Pondicherry' },
+    { label: 'Best shopping spots', query: 'Where are the best shopping spots?' },
 ];
 
 export default function AIChatPage() {
     const [messages, setMessages] = useState<Message[]>([
         {
             id: '1',
-            text: "Hello! I'm TrekBuddy AI 🌴 — your personal Puducherry travel guide. Ask me anything about beaches, temples, food, or let me plan your perfect trip!",
+            text: "Namaste! 🙏 I'm your TrekBuddy AI guide. I know everything about Pondicherry – from the best sunrise spots at Promenade Beach to hidden French cafés in White Town. How can I help you plan your perfect trip today?",
             sender: 'bot',
             timestamp: new Date()
         }
@@ -111,33 +111,25 @@ export default function AIChatPage() {
 
             {/* Header */}
             <div className="flex-none border-b border-slate-200/80 dark:border-slate-800/80 bg-white/80 dark:bg-slate-950/80 backdrop-blur-2xl z-10">
-                <div className="container max-w-4xl mx-auto px-4 py-3.5 flex justify-between items-center">
-                    <div className="flex items-center gap-3">
+                <div className="container max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
+                    <div className="flex items-center gap-4">
                         <div className="relative">
-                            <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white shadow-lg shadow-cyan-500/20">
-                                <Bot className="w-5 h-5" />
+                            <div className="h-12 w-12 rounded-2xl bg-white flex items-center justify-center text-white shadow-sm border border-slate-100">
+                                <div className="h-10 w-10 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-xl flex items-center justify-center">
+                                    <Bot className="w-6 h-6 text-white" />
+                                </div>
                             </div>
-                            {/* Online indicator */}
-                            <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-950" />
                         </div>
                         <div>
-                            <h1 className="text-sm font-bold text-slate-900 dark:text-white">
-                                TrekBuddy AI
+                            <h1 className="text-lg font-bold text-slate-900 dark:text-white font-display tracking-tight">
+                                TrekBuddy AI Guide
                             </h1>
-                            <div className="flex items-center gap-1.5">
-                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">Always online</p>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                                <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Online • Ask me anything about Pondicherry</p>
                             </div>
                         </div>
                     </div>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={clearChat}
-                        className="text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all"
-                    >
-                        <Trash2 className="w-4 h-4" />
-                    </Button>
                 </div>
             </div>
 
@@ -200,7 +192,7 @@ export default function AIChatPage() {
                                 whileHover={{ scale: 1.05, y: -2 }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={() => handleSendMessage(chip.query)}
-                                className="px-4 py-2.5 rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 hover:border-cyan-300 dark:hover:border-cyan-700 hover:shadow-md transition-all duration-300 shadow-sm"
+                                className="px-5 py-3 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 hover:border-slate-300 hover:shadow-sm transition-all shadow-sm"
                             >
                                 {chip.label}
                             </motion.button>
@@ -239,7 +231,7 @@ export default function AIChatPage() {
                         <div className="relative flex items-center bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-lg shadow-slate-900/5 focus-within:border-cyan-300/50 dark:focus-within:border-cyan-700/50 transition-colors">
                             <Sparkles className="w-4 h-4 text-slate-400 ml-5 shrink-0" />
                             <Input
-                                placeholder="Ask about Puducherry..."
+                                placeholder="Ask about places, food, itineraries..."
                                 value={inputText}
                                 onChange={(e) => setInputText(e.target.value)}
                                 className="flex-1 h-14 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-base pl-3 pr-14 placeholder:text-slate-400"
@@ -247,16 +239,19 @@ export default function AIChatPage() {
                             <Button
                                 type="submit"
                                 size="icon"
-                                className="absolute right-2 h-10 w-10 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white shadow-lg shadow-cyan-500/20 transition-all hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-30 disabled:cursor-not-allowed"
+                                className="absolute right-2 h-10 w-12 rounded-xl bg-rose-400 hover:bg-rose-500 text-white shadow-lg shadow-rose-400/20 transition-all hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
                                 disabled={!inputText.trim() || isTyping}
                             >
-                                <Send className="w-4 h-4" />
+                                <Send className="w-5 h-5 ml-1" />
                             </Button>
                         </div>
                     </div>
-                    <p className="text-[10px] text-slate-400 text-center mt-2 font-medium">
-                        Powered by local AI · Responses may vary
-                    </p>
+                    <div className="flex items-center justify-center gap-2 mt-3 text-slate-400">
+                        <MapPin className="w-3 h-3" />
+                        <p className="text-[11px] font-medium">
+                            Powered by TrekBuddy AI • Your Pondicherry expert
+                        </p>
+                    </div>
                 </form>
             </div>
         </div>

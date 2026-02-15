@@ -8,26 +8,12 @@ import { Send, Bot, User, Trash2, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, query, where, getDocs, limit, serverTimestamp } from 'firebase/firestore';
-import { ollamaService } from '@/lib/ollama';
+import { aiService } from '@/services/ai';
 import { getLocalResponse } from '@/utils/localKnowledge';
 import { usePathname } from 'next/navigation';
+import { MASTER_SYSTEM_PROMPT } from '@/lib/prompts';
 
-const PUDUCHERRY_SYSTEM_PROMPT = `You are the official AI Guide for Puducherry (Pondicherry), India.
-Your persona is friendly, knowledgeable, and deeply familiar with local culture, history, and hidden gems.
-
-CORE RULES:
-1. FOCUS: Answer ONLY questions related to Puducherry, Auroville, and surrounding Tamil Nadu areas.
-2. REJECT: If asked about unrelated topics, politely redirect to Puducherry travel.
-3. FORMAT: Keep answers concise (under 3 paragraphs). Use bullet points for lists.
-4. ACCURACY: Do not hallucinate. If unsure, say "I don't have that specific info right now."
-
-KEY KNOWLEDGE AREAS:
-- Beaches: Promenade, Paradise (Chunnambar), Serenity, Auroville Beach.
-- Heritage: White Town (French Quarter), Tamil Quarter, Museums.
-- Spirituality: Sri Aurobindo Ashram, Matrimandir (Auroville), Manakula Vinayagar Temple.
-- Food: French cafes (Baker Street, GMT), Tamil cuisine (Surguru), Italian (Tanto).
-
-TONE: Warm, welcoming, helpful. Like a local friend.`;
+const PUDUCHERRY_SYSTEM_PROMPT = MASTER_SYSTEM_PROMPT;
 
 interface Message {
     id: string;
@@ -129,7 +115,7 @@ export function AIChatWidget() {
                 .join('\n');
 
             const fullPrompt = `${chatHistory}\nUser: ${userText}\nGuide:`;
-            const responseText = await ollamaService.generateResponse(fullPrompt, PUDUCHERRY_SYSTEM_PROMPT);
+            const responseText = await aiService.generateResponse(fullPrompt, PUDUCHERRY_SYSTEM_PROMPT);
 
             const botMessage: Message = {
                 id: (Date.now() + 1).toString(),

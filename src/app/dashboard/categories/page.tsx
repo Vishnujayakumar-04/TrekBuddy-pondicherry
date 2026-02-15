@@ -15,13 +15,17 @@ import {
 
 const CATEGORY_IMAGES: Record<string, string> = {
     beaches: 'https://images.unsplash.com/photo-1582552938357-32b906df40cb?w=800&auto=format&fit=crop&q=80',
-    heritage: 'https://images.unsplash.com/photo-1596711684365-1779956bd448?w=800&auto=format&fit=crop&q=80',
+    heritage: 'https://images.unsplash.com/photo-1582255655519-7b3b6f0430f8?w=800&auto=format&fit=crop&q=80',
+    temples: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/Manakula_Vinayagar_Temple_Pondicherry.jpg/800px-Manakula_Vinayagar_Temple_Pondicherry.jpg',
+    churches: 'https://images.unsplash.com/photo-1548625361-987747e70e3c?w=800&auto=format&fit=crop&q=80',
+    mosques: 'https://images.unsplash.com/photo-1564121211835-e88c852648ab?w=800&auto=format&fit=crop&q=80',
     spiritual: 'https://images.unsplash.com/photo-1623835606828-09553e77c8e3?w=800&auto=format&fit=crop&q=80',
-    restaurants: 'https://images.unsplash.com/photo-1555507036-ab1f40388085?w=800&auto=format&fit=crop&q=80',
-    nature: 'https://images.unsplash.com/photo-1596707328604-faed4c53574c?w=800&auto=format&fit=crop&q=80',
+    restaurants: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&auto=format&fit=crop&q=80',
+    nature: 'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=800&auto=format&fit=crop&q=80',
     adventure: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=800&auto=format&fit=crop&q=80',
     shopping: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=800&auto=format&fit=crop&q=80',
-    transport: 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800&auto=format&fit=crop&q=80',
+    hotels: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&auto=format&fit=crop&q=80',
+    transport: 'https://images.unsplash.com/photo-1518134253900-5034c5147854?w=800&auto=format&fit=crop&q=80',
 };
 
 const HERO_IMAGE = 'https://images.unsplash.com/photo-1621517720977-ce9d53da3657?w=1600&auto=format&fit=crop&q=80';
@@ -33,7 +37,8 @@ export default function CategoriesPage() {
     const categories = [
         { id: 'beaches', name: 'Beaches', icon: Umbrella, desc: 'Sun-kissed shores & sunrise walks', emoji: '🏖️', count: '8 spots' },
         { id: 'heritage', name: 'Heritage', icon: '🏰', desc: 'French Quarter & colonial charm', emoji: '🏛️', count: '12 spots' },
-        { id: 'spiritual', name: 'Spiritual', icon: '🛕', desc: 'Temples, Ashrams & inner peace', emoji: '🕉️', count: '6 spots' },
+        { id: 'spiritual', name: 'Temples & Spiritual', icon: '🛕', desc: 'Hindu temples, churches, mosques & ashrams', emoji: '🕉️', count: '17 places' },
+        { id: 'hotels', name: 'Hotels & Stays', icon: '🏨', desc: 'Boutique hotels, resorts & PG accommodations', emoji: '🏨', count: '15 places' },
         { id: 'restaurants', name: 'Food & Dining', icon: Utensils, desc: 'Cafes, French cuisine & street food', emoji: '🍽️', count: '15 spots' },
         { id: 'nature', name: 'Nature', icon: TreePine, desc: 'Mangroves, lakes & botanical gardens', emoji: '🌿', count: '5 spots' },
         { id: 'adventure', name: 'Adventure', icon: MapPin, desc: 'Scuba, surfing & kayaking', emoji: '🏄', count: '7 spots' },

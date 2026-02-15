@@ -2,30 +2,33 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, Clock, MapPin, Loader2, Route, AlertCircle } from 'lucide-react';
+import { ArrowRight, Clock, MapPin, Loader2, Route, AlertCircle, Bus, Building2, Navigation } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { DashboardHeader } from '@/components/layout/DashboardHeader';
 import { getTransitItems } from '@/services/transitService';
 import { TransitItem } from '@/utils/seedTransitData';
+import { cn } from '@/lib/utils';
 
 const containerVariants = {
     hidden: { opacity: 0 },
     show: {
         opacity: 1,
-        transition: { staggerChildren: 0.04 }
+        transition: { staggerChildren: 0.08 }
     }
 };
 
-const rowVariants = {
-    hidden: { opacity: 0, x: -10 },
-    show: { opacity: 1, x: 0, transition: { type: 'spring' as const, bounce: 0.2 } }
+const cardVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { type: 'spring' as const, bounce: 0.3 } }
 };
 
 export default function BusPage({ embedded = false }: { embedded?: boolean }) {
     const [buses, setBuses] = useState<TransitItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [fromFilter, setFromFilter] = useState('');
+    const [toFilter, setToFilter] = useState('');
 
     useEffect(() => {
         let mounted = true;
@@ -57,168 +60,283 @@ export default function BusPage({ embedded = false }: { embedded?: boolean }) {
         };
     }, []);
 
-    const localBuses = buses.filter(b => b.subCategory === 'local');
-    const interBuses = buses.filter(b => b.subCategory === 'interstate');
+    // Filter buses based on from/to inputs
+    const filterBuses = (busList: TransitItem[]) => {
+        return busList.filter(bus => {
+            const fromMatch = !fromFilter ||
+                bus.from?.toLowerCase().includes(fromFilter.toLowerCase()) ||
+                bus.via?.some(v => v.toLowerCase().includes(fromFilter.toLowerCase()));
 
-    const renderBusList = (routeBuses: TransitItem[]) => (
-        <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="show"
-            className="bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 overflow-hidden shadow-sm backdrop-blur-sm"
-        >
-            {/* Table Header */}
-            <div className="grid grid-cols-12 gap-4 p-4 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r from-slate-50 to-slate-100/50 dark:from-slate-900 dark:to-slate-800/50 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest hidden md:grid">
-                <div className="col-span-1">Route</div>
-                <div className="col-span-5">Journey</div>
-                <div className="col-span-3">Via</div>
-                <div className="col-span-3 text-right">Frequency</div>
-            </div>
-            <div className="divide-y divide-slate-100/80 dark:divide-slate-800/80">
-                {routeBuses.map((bus) => (
-                    <motion.div
-                        key={bus.id}
-                        variants={rowVariants}
-                        whileHover={{ backgroundColor: 'rgba(6, 182, 212, 0.02)' }}
-                        className="grid grid-cols-1 md:grid-cols-12 gap-4 p-4 md:p-5 items-center group cursor-default transition-all duration-300"
-                    >
-                        {/* Route No */}
-                        <div className="col-span-1 flex items-center gap-3 md:block">
-                            <span className="md:hidden text-[10px] text-slate-400 font-bold uppercase tracking-widest">Route</span>
-                            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 flex items-center justify-center font-bold text-sm text-blue-700 dark:text-blue-400 group-hover:scale-110 group-hover:shadow-lg group-hover:shadow-blue-500/10 transition-all duration-300">
-                                {bus.id.length > 3 ? bus.id.substring(0, 3) : bus.id}
-                            </div>
+            const toMatch = !toFilter ||
+                bus.to?.toLowerCase().includes(toFilter.toLowerCase()) ||
+                bus.via?.some(v => v.toLowerCase().includes(toFilter.toLowerCase()));
+
+            return fromMatch && toMatch;
+        });
+    };
+
+    const handleLocateMe = () => {
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition((position) => {
+                const { latitude, longitude } = position.coords;
+                // Simple nearest neighbor search for known locations
+                // This is a simplified list. In a real app, use a geocoding API or a more comprehensive list.
+                const knownLocations = [
+                    { name: 'New Bus Stand', lat: 11.9410, lng: 79.8090 },
+                    { name: 'Old Bus Stand', lat: 11.9333, lng: 79.8333 }, // Approx
+                    { name: 'Railway Station', lat: 11.9266, lng: 79.8253 }, // Approx
+                    { name: 'Gorimedu', lat: 11.9600, lng: 79.8100 }, // Approx
+                    { name: 'Lawspet', lat: 11.9500, lng: 79.8100 }, // Approx
+                    { name: 'Auroville', lat: 12.0070, lng: 79.8100 }, // Approx
+                    { name: 'JIPMER', lat: 11.9550, lng: 79.8000 }, // Approx
+                    { name: 'Airport', lat: 11.9680, lng: 79.8100 }, // Approx
+                ];
+
+                const nearest = knownLocations.reduce((prev, curr) => {
+                    const getDist = (loc: typeof knownLocations[0]) => Math.sqrt(Math.pow(loc.lat - latitude, 2) + Math.pow(loc.lng - longitude, 2));
+                    return getDist(curr) < getDist(prev) ? curr : prev;
+                });
+
+                if (nearest) {
+                    setFromFilter(nearest.name);
+                }
+            }, (error) => {
+                console.error("Geolocation error:", error);
+                alert("Could not get your location. Please ensure location services are enabled.");
+            });
+        } else {
+            alert("Geolocation is not supported by your browser.");
+        }
+    };
+
+    const localBuses = filterBuses(buses.filter(b => b.subCategory === 'local'));
+    const interBuses = filterBuses(buses.filter(b => b.subCategory === 'interstate'));
+
+    const renderBusCard = (bus: TransitItem) => {
+        const isGovernment = bus.type === 'Government' || bus.type === 'PRTC' || bus.type === 'Tourism';
+
+        return (
+            <motion.div
+                key={bus.id}
+                variants={cardVariants}
+                className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm hover:shadow-md transition-shadow group relative overflow-hidden"
+            >
+                {/* Top Row: Title, Badge, Price, Frequency */}
+                <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-6">
+                    <div className="space-y-2">
+                        <div className="flex items-center gap-3 flex-wrap">
+                            <h3 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white font-serif tracking-tight">
+                                {bus.name}
+                            </h3>
+                            <span className={cn(
+                                "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold uppercase tracking-wide border",
+                                isGovernment
+                                    ? "bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800"
+                                    : "bg-orange-50 text-orange-700 border-orange-100 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-800"
+                            )}>
+                                <Building2 className="w-3.5 h-3.5" />
+                                {bus.type || 'Private'}
+                            </span>
+                            {bus.subCategory === 'local' && (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 border border-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800 text-xs font-bold font-mono">
+                                    <Bus className="w-3 h-3" />
+                                    {bus.id.toUpperCase()}
+                                </span>
+                            )}
                         </div>
 
-                        {/* Journey */}
-                        <div className="col-span-11 md:col-span-5 flex flex-col justify-center">
-                            <div className="flex items-center gap-3 text-sm font-semibold text-slate-900 dark:text-white">
-                                <span className="bg-slate-50 dark:bg-slate-800 px-3 py-1 rounded-lg">{bus.from}</span>
-                                <div className="flex items-center gap-1.5">
-                                    <div className="w-2 h-2 rounded-full bg-blue-400" />
-                                    <div className="w-8 h-[2px] bg-gradient-to-r from-blue-400 to-indigo-400 rounded-full" />
-                                    <ArrowRight className="w-3.5 h-3.5 text-blue-500" />
-                                    <div className="w-8 h-[2px] bg-gradient-to-r from-indigo-400 to-purple-400 rounded-full" />
-                                    <div className="w-2 h-2 rounded-full bg-purple-400" />
-                                </div>
-                                <span className="bg-slate-50 dark:bg-slate-800 px-3 py-1 rounded-lg">{bus.to}</span>
+                        <div className="flex items-center gap-3 text-slate-500 dark:text-slate-400 text-sm font-medium">
+                            <div className="flex items-center gap-2">
+                                <MapPin className="w-4 h-4 text-slate-400" />
+                                <span className="text-slate-900 dark:text-white font-semibold">{bus.from}</span>
                             </div>
-                            <span className="text-xs text-slate-500 mt-1.5 pl-1">{bus.name}</span>
+                            <ArrowRight className="w-4 h-4 text-slate-300" />
+                            <span className="text-slate-900 dark:text-white font-semibold">{bus.to}</span>
                         </div>
+                    </div>
 
-                        {/* Via */}
-                        <div className="col-span-11 md:col-span-3 md:flex items-center pl-11 md:pl-0">
-                            <div className="flex items-center gap-1.5 text-xs text-slate-500 bg-slate-50/80 dark:bg-slate-800/40 rounded-lg px-3 py-1.5 w-fit">
-                                <MapPin className="w-3 h-3 text-slate-400" />
-                                <span className="truncate max-w-[180px]">{bus.via?.join(' → ') || 'Direct'}</span>
+                    <div className="flex md:flex-col items-center md:items-end gap-3 md:gap-2 w-full md:w-auto mt-2 md:mt-0 pt-4 md:pt-0 border-t md:border-t-0 border-slate-100 dark:border-slate-800 justify-between md:justify-start">
+                        {bus.price && (
+                            <div className="bg-cyan-50 dark:bg-cyan-900/20 px-3 py-1.5 rounded-lg border border-cyan-100 dark:border-cyan-800/50">
+                                <span className="text-cyan-700 dark:text-cyan-400 font-bold text-lg flex items-center gap-1">
+                                    {bus.price}
+                                </span>
                             </div>
+                        )}
+                        <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 text-sm font-medium">
+                            <Clock className="w-4 h-4" />
+                            <span>{bus.frequency}</span>
                         </div>
+                    </div>
+                </div>
 
-                        {/* Frequency */}
-                        <div className="col-span-11 md:col-span-3 md:text-right flex md:block items-center justify-between pl-11 md:pl-0">
-                            <div className="inline-flex items-center px-3 py-1.5 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-100/50 dark:border-blue-800/30 text-xs font-semibold text-blue-700 dark:text-blue-400 group-hover:shadow-md transition-shadow duration-300">
-                                <Clock className="w-3 h-3 mr-1.5" />
-                                {bus.frequency}
-                            </div>
+                {/* Divider with Stops Info */}
+                <div className="border-t border-slate-100 dark:border-slate-800 pt-4 flex flex-col md:flex-row gap-4 md:items-center text-sm md:text-xs text-slate-500 dark:text-slate-400">
+                    <div className="flex items-center gap-2 min-w-fit">
+                        <Clock className="w-4 h-4 text-slate-400" />
+                        <span className="font-semibold text-slate-700 dark:text-slate-300 text-sm">
+                            {bus.availability || 'Daily Service'}
+                        </span>
+                    </div>
+
+                    <div className="hidden md:block w-px h-4 bg-slate-200 dark:bg-slate-700" />
+
+                    <div className="flex items-center gap-2 overflow-hidden flex-1 min-w-0">
+                        <span className="font-medium shrink-0">Stops:</span>
+                        <div className="flex flex-wrap gap-2">
+                            {bus.via?.map((stop, i) => (
+                                <span key={i} className="px-2.5 py-0.5 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 whitespace-nowrap font-medium text-xs">
+                                    {stop}
+                                </span>
+                            ))}
                         </div>
-                    </motion.div>
-                ))}
-            </div>
-        </motion.div>
-    );
+                    </div>
+
+                    {bus.subCategory === 'interstate' && (
+                        <div className="md:ml-auto shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100 dark:border-slate-800 w-full md:w-auto">
+                            <a
+                                href="https://www.tnstc.in/OTRSOnline/jqreq.do?hiddenAction=PackageSearch"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center justify-center gap-2 w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors shadow-sm hover:shadow active:scale-95"
+                            >
+                                Book Ticket
+                                <ArrowRight className="w-4 h-4" />
+                            </a>
+                        </div>
+                    )}
+                </div>
+            </motion.div>
+        );
+    };
 
     return (
         <div className={embedded ? "space-y-8" : "container mx-auto py-8 px-4 max-w-5xl space-y-8"}>
             {!embedded && (
-                <DashboardHeader
-                    title="Bus Schedule"
-                    subtitle="Live status & timetables for Town Buses & Inter-city routes"
-                    backHref="/dashboard/transit"
-                    backLabel="Transit Hub"
-                />
-            )}
-
-            {/* Section Header */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-                <div>
-                    <div className="flex items-center gap-2 mb-2">
-                        <div className="h-1.5 w-8 bg-gradient-to-r from-blue-500 to-indigo-400 rounded-full" />
+                <div className="mb-8">
+                    <div className="flex items-center gap-2 mb-3">
+                        <div className="h-1 w-6 bg-blue-600 rounded-full" />
                         <span className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest">Schedules</span>
                     </div>
-                    <h2 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
+                    <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
                         Bus Routes & Timetables
-                    </h2>
-                    <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm md:text-base">
+                    </h1>
+                    <p className="text-slate-500 dark:text-slate-400 mt-2 text-lg">
                         Town buses & inter-city routes connecting Puducherry to major cities.
                     </p>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 dark:bg-slate-800/50 px-3 py-2 rounded-lg border border-slate-100 dark:border-slate-800">
-                    <Route className="w-3.5 h-3.5 text-blue-500" />
-                    <span>{buses.length} routes found</span>
-                </div>
-            </div>
+            )}
 
             {loading ? (
-                <div className="flex flex-col items-center justify-center py-20 gap-4">
-                    <div className="relative">
-                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 flex items-center justify-center">
-                            <Loader2 className="w-7 h-7 text-blue-600 dark:text-blue-400 animate-spin" />
-                        </div>
-                        <div className="absolute inset-0 bg-blue-400/20 rounded-2xl blur-xl animate-pulse" />
-                    </div>
-                    <p className="text-slate-500 font-medium">Loading bus schedules...</p>
+                <div className="flex flex-col items-center justify-center py-20 gap-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+                    <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                    <p className="text-slate-500 font-medium">Loading routes...</p>
                 </div>
             ) : error ? (
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="text-center py-16 bg-red-50 dark:bg-red-900/10 rounded-2xl border border-red-200/50 dark:border-red-800/30"
-                >
-                    <AlertCircle className="w-10 h-10 text-red-400 mx-auto mb-3" />
-                    <p className="text-red-600 dark:text-red-400 font-medium">Error: {error}</p>
-                    <p className="text-red-400 text-sm mt-2">Please try refreshing the page.</p>
-                </motion.div>
+                <div className="p-8 text-center bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-200 dark:border-red-800 text-red-600">
+                    <AlertCircle className="w-8 h-8 mx-auto mb-2" />
+                    <p>{error}</p>
+                </div>
             ) : (
-                <Tabs defaultValue="local" className="w-full">
-                    <TabsList className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200/60 dark:border-slate-700/60 p-1.5 mb-8 h-auto rounded-xl shadow-lg shadow-slate-900/5 w-full md:w-auto inline-flex">
-                        <TabsTrigger
-                            value="local"
-                            className="flex-1 md:flex-initial rounded-lg px-6 py-3 font-semibold text-sm transition-all duration-300 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-600/20 text-slate-500 dark:text-slate-400"
-                        >
-                            <span className="mr-2">🏘️</span>
-                            Town Bus (Local)
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="interstate"
-                            className="flex-1 md:flex-initial rounded-lg px-6 py-3 font-semibold text-sm transition-all duration-300 data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-indigo-600/20 text-slate-500 dark:text-slate-400"
-                        >
-                            <span className="mr-2">🏙️</span>
-                            Inter-city (Outstation)
-                        </TabsTrigger>
-                    </TabsList>
+                <Tabs defaultValue="local" className="space-y-8">
+                    {/* Centered Category Tabs */}
+                    <div className="flex justify-center">
+                        <TabsList className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-2 shadow-lg inline-flex gap-2">
+                            <TabsTrigger
+                                value="local"
+                                className="rounded-xl px-10 py-5 font-bold text-xl transition-all duration-300 flex items-center gap-3
+                                    data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-cyan-600 
+                                    data-[state=active]:text-white data-[state=active]:shadow-md
+                                    text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                            >
+                                <Bus className="w-6 h-6" />
+                                <span>Town Bus (Local)</span>
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="interstate"
+                                className="rounded-xl px-10 py-5 font-bold text-xl transition-all duration-300 flex items-center gap-3
+                                    data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-cyan-600 
+                                    data-[state=active]:text-white data-[state=active]:shadow-md
+                                    text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                            >
+                                <Building2 className="w-6 h-6" />
+                                <span>Inter-city (Outstation)</span>
+                            </TabsTrigger>
+                        </TabsList>
+                    </div>
 
-                    <TabsContent value="local" className="space-y-4">
-                        {localBuses.length > 0 ? (
-                            renderBusList(localBuses)
-                        ) : (
-                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-20 bg-gradient-to-br from-slate-50 to-blue-50/30 dark:from-slate-900 dark:to-blue-950/20 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
-                                <div className="text-4xl mb-4">🚌</div>
-                                <p className="text-slate-500 font-medium text-lg">No local buses found</p>
-                                <p className="text-slate-400 text-sm mt-2">Check back soon for updates</p>
-                            </motion.div>
+                    {/* From/To Search Fields */}
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
+                        <div className="grid md:grid-cols-2 gap-4">
+                            <div className="relative">
+                                <label className="text-sm font-semibold text-slate-600 dark:text-slate-400 mb-2 block uppercase tracking-wider">
+                                    From
+                                </label>
+                                <div className="relative">
+                                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-600" />
+                                    <input
+                                        type="text"
+                                        value={fromFilter}
+                                        onChange={(e) => setFromFilter(e.target.value)}
+                                        placeholder="Filter by origin or via..."
+                                        className="w-full pl-11 pr-12 py-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
+                                    />
+                                    <button
+                                        onClick={handleLocateMe}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-emerald-600 transition-colors group"
+                                        title="Use my current location"
+                                    >
+                                        <Navigation className="w-5 h-5 group-hover:fill-emerald-600 transition-colors" />
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="relative">
+                                <label className="text-sm font-semibold text-slate-600 dark:text-slate-400 mb-2 block uppercase tracking-wider">
+                                    To
+                                </label>
+                                <div className="relative">
+                                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-orange-600" />
+                                    <input
+                                        type="text"
+                                        value={toFilter}
+                                        onChange={(e) => setToFilter(e.target.value)}
+                                        placeholder="Filter by destination or via..."
+                                        className="w-full pl-11 pr-4 py-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 outline-none transition-all"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                        {(fromFilter || toFilter) && (
+                            <div className="mt-4 flex items-center justify-between">
+                                <p className="text-sm text-slate-600 dark:text-slate-400">
+                                    Showing filtered routes
+                                </p>
+                                <button
+                                    onClick={() => { setFromFilter(''); setToFilter(''); }}
+                                    className="text-sm text-blue-600 hover:text-blue-700 font-semibold"
+                                >
+                                    Clear Filters
+                                </button>
+                            </div>
                         )}
+                    </div>
+
+                    {/* Routes Count Badge - Centered */}
+                    <div className="flex justify-center">
+                        <Badge variant="outline" className="text-blue-600 border-blue-200 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800 px-4 py-2 text-sm font-semibold">
+                            {buses.length} routes available
+                        </Badge>
+                    </div>
+
+                    <TabsContent value="local">
+                        <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-4">
+                            {localBuses.map(renderBusCard)}
+                        </motion.div>
                     </TabsContent>
-
-                    <TabsContent value="interstate" className="space-y-4">
-                        {interBuses.length > 0 ? (
-                            renderBusList(interBuses)
-                        ) : (
-                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-20 bg-gradient-to-br from-slate-50 to-indigo-50/30 dark:from-slate-900 dark:to-indigo-950/20 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
-                                <div className="text-4xl mb-4">🚍</div>
-                                <p className="text-slate-500 font-medium text-lg">No inter-city buses found</p>
-                                <p className="text-slate-400 text-sm mt-2">Check back soon for updates</p>
-                            </motion.div>
-                        )}
+                    <TabsContent value="interstate">
+                        <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-4">
+                            {interBuses.map(renderBusCard)}
+                        </motion.div>
                     </TabsContent>
                 </Tabs>
             )}

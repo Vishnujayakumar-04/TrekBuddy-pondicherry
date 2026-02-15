@@ -1,21 +1,21 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Phone, MapPin, Loader2, Star, ArrowUpRight, Filter, Sparkles } from 'lucide-react';
+import { Phone, MapPin, Loader2, Star, ArrowUpRight, Filter, Sparkles, Car, Bike, Zap, LayoutGrid } from 'lucide-react';
 import Image from 'next/image';
 import { DashboardHeader } from '@/components/layout/DashboardHeader';
 import { getTransitItems } from '@/services/transitService';
 import { TransitItem } from '@/utils/seedTransitData';
 
 const VEHICLE_CATEGORIES = [
-    { id: 'All', label: 'All Vehicles', emoji: '🔥' },
-    { id: 'Bike', label: 'Bikes', emoji: '🏍️' },
-    { id: 'Scooty', label: 'Scooters', emoji: '🛵' },
-    { id: 'Car', label: 'Cars', emoji: '🚗' },
-    { id: 'Cycle', label: 'Cycles', emoji: '🚲' },
+    { id: 'All', label: 'All Vehicles', icon: LayoutGrid },
+    { id: 'Bike', label: 'Bikes', icon: Zap },
+    { id: 'Scooty', label: 'Scooters', icon: Zap },
+    { id: 'Car', label: 'Cars', icon: Car },
+    { id: 'Cycle', label: 'Cycles', icon: Bike },
 ];
 
 const containerVariants = {
@@ -59,7 +59,7 @@ export default function RentalsPage({ embedded = false }: { embedded?: boolean }
         : providers.filter(p => p.subCategory === filter);
 
     return (
-        <div className={embedded ? "space-y-8" : "container mx-auto py-8 px-4 max-w-6xl space-y-8"}>
+        <div className={embedded ? "space-y-6" : "container mx-auto py-8 px-4 max-w-6xl space-y-8"}>
             {!embedded && (
                 <DashboardHeader
                     title="Vehicle Rentals"
@@ -73,7 +73,7 @@ export default function RentalsPage({ embedded = false }: { embedded?: boolean }
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
                     <div className="flex items-center gap-2 mb-2">
-                        <div className="h-1.5 w-8 bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full" />
+                        <div className="h-1.5 w-8 bg-emerald-500 rounded-full" />
                         <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">Self Drive</span>
                     </div>
                     <h2 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
@@ -83,40 +83,42 @@ export default function RentalsPage({ embedded = false }: { embedded?: boolean }
                         Rent a vehicle and discover Puducherry's hidden gems on your schedule.
                     </p>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-slate-500">
-                    <Filter className="w-4 h-4" />
-                    <span>{filteredProviders.length} options available</span>
+                <div className="flex items-center gap-2 text-sm text-slate-500 font-medium bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full">
+                    <Filter className="w-3.5 h-3.5" />
+                    <span>{filteredProviders.length} options</span>
                 </div>
             </div>
 
             {/* Category Filter Pills */}
             <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-                {VEHICLE_CATEGORIES.map((type) => (
-                    <motion.button
-                        key={type.id}
-                        onClick={() => setFilter(type.id)}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className={`relative px-5 py-2.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap flex items-center gap-2
-                            ${filter === type.id
-                                ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-lg shadow-slate-900/15'
-                                : 'bg-white dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 text-slate-600 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600 hover:shadow-md'
-                            }`}
-                    >
-                        <span className="text-base">{type.emoji}</span>
-                        {type.label}
-                    </motion.button>
-                ))}
+                {VEHICLE_CATEGORIES.map((type) => {
+                    const Icon = type.icon;
+                    return (
+                        <motion.button
+                            key={type.id}
+                            onClick={() => setFilter(type.id)}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            className={`relative px-4 py-2 rounded-lg text-sm font-semibold transition-all whitespace-nowrap flex items-center gap-2 border
+                                ${filter === type.id
+                                    ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-slate-900 dark:border-white shadow-md'
+                                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700'
+                                }`}
+                        >
+                            <Icon className="w-4 h-4" />
+                            {type.label}
+                        </motion.button>
+                    );
+                })}
             </div>
 
             {/* Content */}
             {loading ? (
                 <div className="flex flex-col items-center justify-center py-20 gap-4">
                     <div className="relative">
-                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-100 to-teal-100 dark:from-emerald-900/30 dark:to-teal-900/30 flex items-center justify-center">
+                        <div className="w-16 h-16 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center">
                             <Loader2 className="w-7 h-7 text-emerald-600 dark:text-emerald-400 animate-spin" />
                         </div>
-                        <div className="absolute inset-0 bg-emerald-400/20 rounded-2xl blur-xl animate-pulse" />
                     </div>
                     <p className="text-slate-500 font-medium">Loading rentals...</p>
                 </div>
@@ -133,18 +135,19 @@ export default function RentalsPage({ embedded = false }: { embedded?: boolean }
                     variants={containerVariants}
                     initial="hidden"
                     animate="show"
-                    className="grid grid-cols-1 md:grid-cols-2 gap-4"
+                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4"
                 >
                     {filteredProviders.map((provider) => (
                         <motion.div
                             key={provider.id}
                             variants={itemVariants}
                             whileHover={{ y: -4, transition: { duration: 0.2 } }}
-                            className="group bg-white dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl overflow-hidden hover:border-emerald-300/60 dark:hover:border-emerald-700/40 hover:shadow-xl hover:shadow-emerald-500/5 transition-all duration-400 backdrop-blur-sm"
+                            className="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden hover:border-emerald-500/50 hover:shadow-lg transition-all duration-300 cursor-pointer"
+                            onClick={() => window.location.href = `/dashboard/transit/rentals/${provider.id}`}
                         >
-                            <div className="flex flex-col sm:flex-row">
+                            <div className="flex flex-col sm:flex-row h-full">
                                 {/* Image Section */}
-                                <div className="w-full sm:w-44 h-44 sm:h-auto relative overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 shrink-0">
+                                <div className="w-full sm:w-40 h-40 sm:h-auto relative overflow-hidden bg-slate-100 dark:bg-slate-800 shrink-0">
                                     {provider.image ? (
                                         <Image
                                             src={provider.image}
@@ -154,64 +157,65 @@ export default function RentalsPage({ embedded = false }: { embedded?: boolean }
                                             unoptimized
                                         />
                                     ) : (
-                                        <div className="flex items-center justify-center h-full text-4xl">
-                                            {provider.subCategory === 'Bike' ? '🏍️' : provider.subCategory === 'Scooty' ? '🛵' : provider.subCategory === 'Car' ? '🚗' : '🚲'}
+                                        <div className="flex items-center justify-center h-full text-slate-300 dark:text-slate-600">
+                                            {provider.subCategory === 'Car' ? <Car className="w-12 h-12" /> : <Zap className="w-12 h-12" />}
                                         </div>
                                     )}
-                                    {/* Gradient overlay */}
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                                    {/* Rating chip */}
-                                    {typeof provider.rating === 'number' && (
-                                        <div className="absolute top-3 left-3 flex items-center gap-1 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md text-slate-900 dark:text-white text-xs font-bold px-2.5 py-1.5 rounded-lg shadow-lg">
-                                            <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
-                                            {provider.rating}
-                                        </div>
-                                    )}
+                                    <div className="absolute top-2 left-2 flex items-center gap-1 bg-white/90 dark:bg-black/80 backdrop-blur-sm text-slate-900 dark:text-white text-[10px] font-bold px-2 py-1 rounded">
+                                        <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
+                                        {provider.rating}
+                                    </div>
                                 </div>
 
                                 {/* Content Section */}
-                                <div className="flex-1 p-5 flex flex-col justify-between">
-                                    <div className="space-y-3">
+                                <div className="flex-1 p-4 flex flex-col justify-between">
+                                    <div className="space-y-2">
                                         <div>
-                                            <h3 className="font-bold text-lg text-slate-900 dark:text-white group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors duration-300">
+                                            <h3 className="font-bold text-base text-slate-900 dark:text-white group-hover:text-emerald-600 transition-colors line-clamp-1">
                                                 {provider.name}
                                             </h3>
-                                            <div className="flex items-center text-slate-500 dark:text-slate-400 text-sm mt-1.5 gap-1.5">
-                                                <div className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
-                                                    <MapPin className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                                                </div>
-                                                <span>{provider.location}</span>
+                                            <div className="flex items-center text-slate-500 dark:text-slate-400 text-xs mt-1 gap-1">
+                                                <MapPin className="w-3 h-3" />
+                                                <span className="line-clamp-1">{provider.location}</span>
                                             </div>
                                         </div>
-                                        <Badge className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-0 font-medium rounded-lg px-3 py-1 text-xs">
+                                        <Badge variant="outline" className="text-xs font-normal text-slate-500 border-slate-200">
                                             {provider.subCategory}
                                         </Badge>
                                     </div>
 
-                                    <div className="flex items-end justify-between mt-4 pt-4 border-t border-slate-100 dark:border-slate-800/60">
+                                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                                         <div>
-                                            <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-widest font-bold block">Starting at</span>
-                                            <span className="font-bold text-emerald-600 dark:text-emerald-400 text-xl tracking-tight">
+                                            <p className="text-[10px] text-slate-400 uppercase font-bold">Starts at</p>
+                                            <p className="font-bold text-emerald-600 dark:text-emerald-400 text-lg leading-none">
                                                 {provider.price}
-                                            </span>
+                                            </p>
                                         </div>
-                                        {provider.contact ? (
-                                            <Button
-                                                size="sm"
-                                                className="rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100 shadow-lg shadow-slate-900/10 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 font-semibold px-4"
-                                                asChild
-                                            >
-                                                <a href={`tel:${provider.contact}`}>
-                                                    <Phone className="w-3.5 h-3.5 mr-2" />
-                                                    Call
-                                                    <ArrowUpRight className="w-3 h-3 ml-1 opacity-50" />
-                                                </a>
-                                            </Button>
-                                        ) : (
-                                            <Button size="sm" disabled className="rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 font-semibold px-4">
-                                                <Phone className="w-3.5 h-3.5 mr-2" /> Unavailable
-                                            </Button>
-                                        )}
+                                        <div className="flex gap-2">
+                                            {provider.contact && (
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    className="h-8 rounded-lg border-slate-200 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800 text-xs font-semibold"
+                                                    asChild
+                                                >
+                                                    <a href={`tel:${provider.contact}`}>
+                                                        <Phone className="w-3 h-3 mr-1.5" /> Call
+                                                    </a>
+                                                </Button>
+                                            )}
+                                            {provider.bookingUrl && (
+                                                <Button
+                                                    size="sm"
+                                                    className="h-8 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 text-white hover:from-emerald-700 hover:to-teal-700 text-xs font-semibold shadow-md"
+                                                    asChild
+                                                >
+                                                    <a href={provider.bookingUrl} target="_blank" rel="noopener noreferrer">
+                                                        <ArrowUpRight className="w-3 h-3 mr-1.5" /> Book
+                                                    </a>
+                                                </Button>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -220,18 +224,12 @@ export default function RentalsPage({ embedded = false }: { embedded?: boolean }
                 </motion.div>
             ) : (
                 <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-center py-20 bg-gradient-to-br from-slate-50 to-slate-100/50 dark:from-slate-900 dark:to-slate-800/50 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-center py-20 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700"
                 >
-                    <div className="text-4xl mb-4">🏍️</div>
-                    <p className="text-slate-500 font-medium text-lg">
-                        {providers.length === 0
-                            ? "Transit data under preparation"
-                            : `No rentals found for "${filter}"`
-                        }
-                    </p>
-                    <p className="text-slate-400 text-sm mt-2">Check back soon for updates</p>
+                    <Car className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                    <p className="text-slate-500 font-medium">No rentals found</p>
                 </motion.div>
             )}
         </div>

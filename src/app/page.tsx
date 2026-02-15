@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { motion, useScroll, useTransform, useMotionValue, useSpring, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -12,6 +12,9 @@ import {
   Sparkles, Star, Users, Compass, Globe, ChevronRight, Heart, Camera, Zap
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { CinematicHero } from '@/components/home/CinematicHero';
+import { GallerySection } from '@/components/home/GallerySection';
+import { Footer } from '@/components/layout/Footer';
 
 /* ─────────── DATA ─────────── */
 const FEATURES = [
@@ -70,34 +73,7 @@ function useCounter(target: number, duration = 2000) {
   return { count, ref };
 }
 
-/* ─────────── FLOATING PARTICLES ─────────── */
-function FloatingParticles() {
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {Array.from({ length: 20 }).map((_, i) => (
-        <motion.div
-          key={i}
-          className="absolute w-1 h-1 bg-white/20 rounded-full"
-          style={{
-            left: `${Math.random() * 100}%`,
-            top: `${Math.random() * 100}%`,
-          }}
-          animate={{
-            y: [0, -30, 0],
-            opacity: [0.2, 0.6, 0.2],
-            scale: [1, 1.5, 1],
-          }}
-          transition={{
-            duration: 3 + Math.random() * 4,
-            repeat: Infinity,
-            delay: Math.random() * 3,
-            ease: 'easeInOut',
-          }}
-        />
-      ))}
-    </div>
-  );
-}
+
 
 /* ─────────── MAIN PAGE ─────────── */
 export default function HomePage() {
@@ -105,12 +81,8 @@ export default function HomePage() {
   const { user, loading } = useAuthContext();
   const [hoveredFeature, setHoveredFeature] = useState<number | null>(null);
   const [hoveredCat, setHoveredCat] = useState<string | null>(null);
-  const heroRef = useRef<HTMLDivElement>(null);
 
-  const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
-  const heroImageY = useTransform(scrollYProgress, [0, 1], ['0%', '30%']);
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
-  const heroScale = useTransform(scrollYProgress, [0, 1], [1, 1.1]);
+
 
   const handleStartPlanning = () => {
     if (loading) return;
@@ -120,116 +92,7 @@ export default function HomePage() {
   return (
     <div className="flex flex-col min-h-screen bg-white dark:bg-slate-950 overflow-x-hidden">
 
-      {/* ═══════════════ 1. CINEMATIC HERO ═══════════════ */}
-      <section ref={heroRef} className="relative h-screen flex items-center justify-center overflow-hidden">
-        {/* Parallax background */}
-        <motion.div className="absolute inset-0 z-0" style={{ y: heroImageY, scale: heroScale }}>
-          <div className="absolute inset-0 bg-slate-900" />
-          <Image src="/images/hero-bg.jpg" alt="Puducherry Coastline" fill className="object-cover object-center" priority />
-        </motion.div>
-
-        {/* Multi-layer cinematic gradients */}
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/60 via-slate-950/20 to-slate-950/80 z-[1]" />
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/50 via-transparent to-transparent z-[1]" />
-
-        {/* Floating particles */}
-        <FloatingParticles />
-
-        {/* Animated vignette edges */}
-        <div className="absolute inset-0 z-[2] shadow-[inset_0_0_150px_60px_rgba(0,0,0,0.4)]" />
-
-        {/* Hero Content */}
-        <motion.div style={{ opacity: heroOpacity }} className="relative z-10 container mx-auto px-4 text-center max-w-5xl">
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1.2, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="space-y-8"
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.3, duration: 0.8 }}
-            >
-              <Badge className="bg-white/10 hover:bg-white/20 text-white px-5 py-2 text-sm uppercase tracking-[0.3em] backdrop-blur-xl border-white/10 font-medium rounded-full">
-                <Compass className="w-3.5 h-3.5 mr-2 animate-spin" style={{ animationDuration: '8s' }} />
-                Welcome to Puducherry
-              </Badge>
-            </motion.div>
-
-            <h1 className="text-5xl md:text-7xl lg:text-[5.5rem] font-black tracking-tight text-white leading-[0.95]">
-              <motion.span
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5, duration: 0.8 }}
-                className="block"
-              >
-                The French Riviera
-              </motion.span>
-              <motion.span
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.7, duration: 0.8 }}
-                className="block bg-gradient-to-r from-cyan-300 via-blue-400 to-violet-400 bg-clip-text text-transparent"
-              >
-                of the East
-              </motion.span>
-            </h1>
-
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 1, duration: 0.8 }}
-              className="text-lg md:text-xl text-white/70 max-w-2xl mx-auto font-medium leading-relaxed"
-            >
-              Colonial heritage, spiritual tranquility, and coastal vibes — explore Puducherry like never before with AI-powered travel intelligence.
-            </motion.p>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.3, duration: 0.8 }}
-              className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4"
-            >
-              <Button
-                size="lg"
-                onClick={handleStartPlanning}
-                disabled={loading}
-                className="group rounded-full px-10 h-16 text-lg font-bold bg-white text-slate-900 hover:bg-white shadow-[0_0_60px_-15px_rgba(255,255,255,0.3)] hover:shadow-[0_0_80px_-15px_rgba(255,255,255,0.5)] transition-all duration-500 hover:scale-105"
-              >
-                {loading ? 'Loading...' : 'Start Your Journey'}
-                {!loading && <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />}
-              </Button>
-              <Link href="/about">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="rounded-full px-8 h-16 text-lg font-semibold border-white/20 text-white hover:text-white hover:bg-white/10 backdrop-blur-md"
-                >
-                  <Globe className="w-5 h-5 mr-2" />
-                  Discover Puducherry
-                </Button>
-              </Link>
-            </motion.div>
-          </motion.div>
-        </motion.div>
-
-        {/* Animated scroll indicator */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 2, duration: 1 }}
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-3"
-        >
-          <span className="text-[10px] uppercase tracking-[0.3em] text-white/40 font-semibold">Scroll</span>
-          <motion.div
-            animate={{ y: [0, 8, 0] }}
-            transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
-          >
-            <ArrowDown className="w-4 h-4 text-white/40" />
-          </motion.div>
-        </motion.div>
-      </section>
+      <CinematicHero />
 
       {/* ═══════════════ 2. FEATURE CARDS (Overlapping Hero) ═══════════════ */}
       <section className="relative z-20 -mt-24 pb-24">
@@ -384,6 +247,10 @@ export default function HomePage() {
         </div>
       </section>
 
+
+      {/* ═══════════════ GALERY SECTION ═══════════════ */}
+      <GallerySection />
+
       {/* ═══════════════ 5. TESTIMONIALS ═══════════════ */}
       <section className="py-24 bg-white dark:bg-slate-900 relative overflow-hidden">
         <div className="absolute top-20 right-0 w-96 h-96 bg-cyan-500/5 rounded-full blur-[120px]" />
@@ -493,7 +360,7 @@ export default function HomePage() {
                 <Button
                   variant="outline"
                   size="lg"
-                  className="rounded-full px-8 h-16 text-lg font-semibold border-slate-700 text-white hover:text-white hover:bg-white/5 hover:border-slate-600"
+                  className="rounded-full px-8 h-16 text-lg font-semibold bg-transparent border-2 border-slate-600 text-white hover:bg-slate-800 hover:border-slate-500 hover:text-white transition-all shadow-lg shadow-black/20"
                 >
                   Ask AI a Question
                   <ArrowRight className="ml-2 w-5 h-5" />
@@ -504,6 +371,7 @@ export default function HomePage() {
         </div>
       </section>
 
+      <Footer />
     </div>
   );
 }

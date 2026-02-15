@@ -21,13 +21,30 @@ RULES:
 5. Formatting: Use **bold** for place names.
 `;
 
+const QUICK_REPLIES: Record<string, string> = {
+    'beaches': "Top beaches in Pondicherry include **Promenade Beach** (perfect for sunrise walks), **Paradise Beach** (ideal for water sports, accessible by boat), **Serenity Beach** (great for surfing), and **Auroville Beach** (quiet and peaceful). Don't miss the rock beach cafes!",
+    'restaurants': "For French cuisine, try **Villa Shanti** or **Carte Blanche**. For distinct Tamil flavors, **Maison Perumal** is excellent. **Cafe des Arts** and **Coromandel Cafe** offer great vibes and continental dishes. Don't forget **Baker Street** for croissants!",
+    'temples': "**Manakula Vinayagar Temple** is the most famous, dedicated to Lord Ganesha with a golden chariot. **Sri Aurobindo Ashram** is a spiritual center. **Vedapureeswarar Temple** and **Varadaraja Perumal Temple** are also historically significant Dravidian style temples.",
+    'itinerary': "**Day 1**: Explore White Town (French Quarter), visit Sri Aurobindo Ashram, and walk along Promenade Beach in the evening.\n**Day 2**: Morning trip to Auroville and Matrimandir. Afternoon at Paradise Beach.\n**Day 3**: Visit Manakula Vinayagar Temple, shop at Mission Street, and enjoy a sunset dinner at a beachside cafe.",
+    'shopping': "Best shopping spots: **Mission Street** for clothes and huge brands, **Serenity Beach Bazaar** for handicrafts on weekends, and **Auroville Boutiques** for handmade paper, pottery, and organic clothes."
+};
+
 export async function getAIResponse(userMessage: string): Promise<string> {
+    // 1. Check for Quick Replies (Instant Response)
+    const lowerMsg = userMessage.toLowerCase();
+    if (lowerMsg.includes('beach')) return QUICK_REPLIES['beaches'];
+    if (lowerMsg.includes('eat') || lowerMsg.includes('restaurant') || lowerMsg.includes('food')) return QUICK_REPLIES['restaurants'];
+    if (lowerMsg.includes('temple')) return QUICK_REPLIES['temples'];
+    if (lowerMsg.includes('itinerary') || lowerMsg.includes('plan')) return QUICK_REPLIES['itinerary'];
+    if (lowerMsg.includes('shop')) return QUICK_REPLIES['shopping'];
+
+    // 2. Fallback to Local AI (Ollama)
     try {
         const response = await ollamaService.generateResponse(userMessage, SYSTEM_INSTRUCTION);
         return response;
     } catch (error: any) {
         console.error("Ollama Chat Error:", error);
-        return `I'm having trouble connecting to my local brain (Ollama). Please make sure 'ollama serve' is running in your terminal! Error: ${error.message}`;
+        return `I'm having trouble connecting to my local brain (Ollama). But here's a quick tip: Try visiting **White Town** for a beautiful evening walk! (Error: ${error.message})`;
     }
 }
 

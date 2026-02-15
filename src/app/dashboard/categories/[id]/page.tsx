@@ -20,6 +20,8 @@ const CATEGORY_HEROES: Record<string, string> = {
     spiritual: "https://images.unsplash.com/photo-1623835606828-09553e77c8e3?w=1600&auto=format&fit=crop&q=80",
     temples: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/Manakula_Vinayagar_Temple_Pondicherry.jpg/1200px-Manakula_Vinayagar_Temple_Pondicherry.jpg",
     churches: "https://images.unsplash.com/photo-1548625361-987747e70e3c?w=1600&auto=format&fit=crop&q=80",
+    mosques: "https://images.unsplash.com/photo-1564121211835-e88c852648ab?w=1600&auto=format&fit=crop&q=80",
+    hotels: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1600&auto=format&fit=crop&q=80",
     restaurants: "https://images.unsplash.com/photo-1555507036-ab1f40388085?w=1600&auto=format&fit=crop&q=80",
     nature: "https://images.unsplash.com/photo-1596707328604-faed4c53574c?w=1600&auto=format&fit=crop&q=80",
     parks: "https://images.unsplash.com/photo-1596707328604-faed4c53574c?w=1600&auto=format&fit=crop&q=80",
@@ -31,7 +33,11 @@ const CATEGORY_HEROES: Record<string, string> = {
 const CATEGORY_DESCRIPTIONS: Record<string, string> = {
     beaches: "Discover Puducherry's pristine coastline — from golden sunrise views to thrilling water sports.",
     heritage: "Walk through centuries of French colonial architecture and Tamil cultural heritage.",
-    spiritual: "Find peace at ancient temples, sacred ashrams, and tranquil meditation centers.",
+    temples: "Experience divine blessings at ancient Hindu temples with rich spiritual heritage and sacred rituals.",
+    churches: "Marvel at stunning Gothic and colonial architecture in historic churches and cathedrals.",
+    mosques: "Visit peaceful Islamic prayer halls and mosques reflecting Puducherry's diverse religious heritage.",
+    spiritual: "Find peace at sacred ashrams and meditation centers for inner reflection and spiritual growth.",
+    hotels: "Stay in charming heritage hotels, luxury resorts, or budget-friendly accommodations across Puducherry.",
     restaurants: "Savor the unique fusion of French, Tamil, and coastal cuisines at Pondy's finest spots.",
     nature: "Explore lush mangroves, serene lakes, and tropical botanical gardens.",
     adventure: "Dive deep, ride the waves, and paddle through Puducherry's best adventure spots.",
@@ -56,33 +62,108 @@ export default function CategoryDetailPage({ params }: PageProps) {
 
     const allPlaces = useMemo(() => getPlacesByCategory(id), [id]);
 
+    // Special handling for spiritual category - show religion filters
+    const religionFilters = ['All', 'Hindu Temples', 'Churches', 'Mosques', 'Ashrams'];
+
     const allTags = useMemo(() => {
+        if (id === 'spiritual') {
+            return religionFilters;
+        }
         const tags = new Set<string>();
         allPlaces.forEach(p => p.tags.forEach(t => tags.add(t)));
         return ['All', ...Array.from(tags)];
-    }, [allPlaces]);
+    }, [allPlaces, id]);
 
     const [activeFilter, setActiveFilter] = useState('All');
 
-    const filteredPlaces = activeFilter === 'All'
-        ? allPlaces
-        : allPlaces.filter(p => p.tags.includes(activeFilter));
+    const filteredPlaces = useMemo(() => {
+        if (activeFilter === 'All') return allPlaces;
+
+        // Special filtering for spiritual category
+        if (id === 'spiritual') {
+            switch (activeFilter) {
+                case 'Hindu Temples':
+                    return allPlaces.filter(p => p.category === 'temples');
+                case 'Churches':
+                    return allPlaces.filter(p => p.category === 'churches');
+                case 'Mosques':
+                    return allPlaces.filter(p => p.category === 'mosques');
+                case 'Ashrams':
+                    return allPlaces.filter(p => p.category === 'spiritual');
+                default:
+                    return allPlaces;
+            }
+        }
+
+        // Regular tag filtering for other categories
+        return allPlaces.filter(p => p.tags.includes(activeFilter));
+    }, [allPlaces, activeFilter, id]);
 
     return (
         <div className="min-h-screen pb-20">
-            {/* Immersive Hero */}
+            {/* Immersive Hero with Image Marquee */}
             <div className="relative h-[45vh] min-h-[320px] md:h-[50vh] w-full overflow-hidden -mt-16">
-                <Image
-                    src={heroImage}
-                    alt={categoryName}
-                    fill
-                    className="object-cover scale-105"
-                    priority
-                    unoptimized
-                />
+                {/* Animated Image Marquee Background */}
+                <div className="absolute inset-0 flex gap-4">
+                    {/* First set of images */}
+                    <motion.div
+                        className="flex gap-4 shrink-0"
+                        animate={{
+                            x: [0, -1920]
+                        }}
+                        transition={{
+                            x: {
+                                repeat: Infinity,
+                                repeatType: "loop",
+                                duration: 40,
+                                ease: "linear"
+                            }
+                        }}
+                    >
+                        {allPlaces.slice(0, 8).map((place, idx) => (
+                            <div key={`img-1-${idx}`} className="relative w-[400px] h-full shrink-0">
+                                <Image
+                                    src={place.image}
+                                    alt={place.name}
+                                    fill
+                                    className="object-cover"
+                                    unoptimized
+                                />
+                            </div>
+                        ))}
+                    </motion.div>
+                    {/* Duplicate set for seamless loop */}
+                    <motion.div
+                        className="flex gap-4 shrink-0"
+                        animate={{
+                            x: [0, -1920]
+                        }}
+                        transition={{
+                            x: {
+                                repeat: Infinity,
+                                repeatType: "loop",
+                                duration: 40,
+                                ease: "linear"
+                            }
+                        }}
+                    >
+                        {allPlaces.slice(0, 8).map((place, idx) => (
+                            <div key={`img-2-${idx}`} className="relative w-[400px] h-full shrink-0">
+                                <Image
+                                    src={place.image}
+                                    alt={place.name}
+                                    fill
+                                    className="object-cover"
+                                    unoptimized
+                                />
+                            </div>
+                        ))}
+                    </motion.div>
+                </div>
+
                 {/* Multi-layer overlay */}
-                <div className="absolute inset-0 bg-gradient-to-b from-slate-950/50 via-slate-950/20 to-slate-50 dark:to-slate-950" />
-                <div className="absolute inset-0 bg-gradient-to-r from-slate-950/40 via-transparent to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-b from-slate-950/70 via-slate-950/40 to-slate-50 dark:to-slate-950" />
+                <div className="absolute inset-0 bg-gradient-to-r from-slate-950/60 via-transparent to-transparent" />
 
                 {/* Back button */}
                 <div className="absolute top-20 left-4 md:left-8 z-20">
