@@ -22,7 +22,6 @@ import { useAuthContext } from '@/context/AuthContext';
 
 import { TripWizard } from '@/components/planner/TripWizard';
 import { TripDraft, GeneratedTrip } from '@/types/planner';
-import { generateItinerary } from '@/services/plannerService';
 
 const TRIP_COLORS = [
     'from-cyan-500 to-blue-600',
@@ -64,8 +63,7 @@ export default function TripPlannerPage() {
 
         const q = query(
             collection(db, 'trips'),
-            where('userId', '==', user.uid),
-            orderBy('createdAt', 'desc')
+            where('userId', '==', user.uid)
         );
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -73,10 +71,21 @@ export default function TripPlannerPage() {
                 id: doc.id,
                 ...doc.data()
             })) as GeneratedTrip[];
-            setTrips(tripData);
+
+            // Sort client-side to avoid Firestore index requirement issues
+            // Sort by createdAt desc
+            const sortedTrips = tripData.sort((a, b) => {
+                const dateA = a.createdAt?.seconds ? new Date(a.createdAt.seconds * 1000) : new Date();
+                const dateB = b.createdAt?.seconds ? new Date(b.createdAt.seconds * 1000) : new Date();
+                return dateB.getTime() - dateA.getTime();
+            });
+
+            setTrips(sortedTrips);
             setIsLoading(false);
         }, (error) => {
             console.error("Error fetching trips:", error);
+            // If index error, show specific message? No, just fallback safe.
+            toast.error("Could not load trips. Please check console.");
             setIsLoading(false);
         });
 

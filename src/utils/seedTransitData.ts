@@ -1,4 +1,4 @@
-import { collection, doc, writeBatch, getDocs, query, where } from 'firebase/firestore';
+import { collection, doc, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 export interface TransitItem {

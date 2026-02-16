@@ -41,7 +41,7 @@ export function CinematicHero() {
     };
 
     return (
-        <section className="relative w-full h-screen min-h-[800px] overflow-hidden bg-slate-950 flex flex-col justify-center">
+        <section className="relative w-full h-screen min-h-[800px] overflow-hidden bg-slate-950 flex flex-col justify-start">
 
             {/* Background Gradient Mesh */}
             <div className="absolute inset-0 z-0">
@@ -49,10 +49,10 @@ export function CinematicHero() {
                 <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-600/20 rounded-full blur-[120px]" />
             </div>
 
-            <div className="container mx-auto px-4 z-10 grid lg:grid-cols-2 gap-12 lg:gap-20 h-full items-center">
+            <div className="w-full max-w-[1600px] mx-auto px-6 md:px-12 z-10 grid lg:grid-cols-2 gap-8 h-full items-center">
 
                 {/* Left: Content */}
-                <div className="max-w-2xl pt-20 lg:pt-0">
+                <div className="w-full pt-32 lg:pt-32">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -143,7 +143,7 @@ export function CinematicHero() {
                 </div>
 
                 {/* Right: Visual Columns */}
-                <div className="relative h-[120%] -my-20 w-full hidden lg:grid grid-cols-3 gap-6 overflow-hidden mask-vertical-fade rotate-[-5deg] translate-x-12 opacity-80 hover:opacity-100 transition-opacity duration-700">
+                <div className="relative h-[120%] -my-20 w-full hidden lg:grid grid-cols-3 gap-6 overflow-hidden mask-vertical-fade rotate-[-5deg] opacity-80 hover:opacity-100 transition-opacity duration-700">
                     <ParallaxColumn images={COLUMN_1} yPercent={-50} duration={25} />
                     <ParallaxColumn images={COLUMN_2} yPercent={-50} duration={35} reverse />
                     <ParallaxColumn images={COLUMN_3} yPercent={-50} duration={28} />

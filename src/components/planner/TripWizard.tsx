@@ -21,7 +21,8 @@ import { TripStepPreferences } from './steps/TripStepPreferences';
 import { TripReview } from './steps/TripReview';
 
 // Service
-import { generateItinerary } from '@/services/plannerService';
+// Service (Now Server Action)
+import { generateItinerary } from '@/app/actions/planner';
 
 const INITIAL_DRAFT: TripDraft = {
     name: '',
@@ -116,8 +117,8 @@ export function TripWizard({ onCancel }: { onCancel: () => void }) {
             toast.success("Trip generated successfully!");
             onCancel();
 
-            // 5. Redirect (using the new ID)
-            router.push(`/dashboard/planner/${docRef.id}`);
+            // 5. Stay on list page (don't redirect)
+            // router.push(`/dashboard/planner/${docRef.id}`);
 
         } catch (err: any) {
             console.error(err);
@@ -137,7 +138,14 @@ export function TripWizard({ onCancel }: { onCancel: () => void }) {
                         {step === 3 ? "Review & Generate" : "Plan Your Adventure"}
                     </h2>
                     <p className="text-sm text-slate-500 mt-1">
-                        Step {step + 1} of 4 • {step === 0 ? "Basics" : step === 1 ? "Dates" : step === 2 ? "Preferences" : "Review"}
+                        {isGenerating ? (
+                            <span className="flex items-center gap-2 text-amber-600 animate-pulse">
+                                <Sparkles className="w-3 h-3" />
+                                AI is thinking (High traffic, please wait)...
+                            </span>
+                        ) : (
+                            `Step ${step + 1} of 4 • ${step === 0 ? "Basics" : step === 1 ? "Dates" : step === 2 ? "Preferences" : "Review"}`
+                        )}
                     </p>
                 </div>
                 {/* On mobile, close button might be useful */}
@@ -179,10 +187,17 @@ export function TripWizard({ onCancel }: { onCancel: () => void }) {
                 </AnimatePresence>
 
                 {error && (
-                    <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 text-red-600 rounded-lg text-sm flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
-                        <X className="w-4 h-4" />
-                        {error}
-                    </div>
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mt-4 p-4 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 text-red-600 dark:text-red-400 rounded-xl text-sm flex items-start gap-3"
+                    >
+                        <X className="w-5 h-5 shrink-0 mt-0.5" />
+                        <div>
+                            <p className="font-semibold">Unable to Generate Trip</p>
+                            <p className="opacity-90 mt-1">{error}</p>
+                        </div>
+                    </motion.div>
                 )}
             </div>
 

@@ -15,7 +15,7 @@ interface Message {
     timestamp: Date;
 }
 
-import { getAIResponse } from '@/services/chatService';
+import { getAIResponse, getAIResponseStream } from '@/services/chatService';
 
 const SUGGESTION_CHIPS = [
     { label: 'What are the best beaches in Pondicherry?', query: 'What are the best beaches in Pondicherry?' },
@@ -61,15 +61,25 @@ export default function AIChatPage() {
         setIsTyping(true);
 
         try {
-            const reply = await getAIResponse(userText);
-
+            // Create placeholder message
+            const botMessageId = (Date.now() + 1).toString();
             const botMessage: Message = {
-                id: (Date.now() + 1).toString(),
-                text: reply,
+                id: botMessageId,
+                text: '', // Start empty
                 sender: 'bot',
                 timestamp: new Date()
             };
             setMessages(prev => [...prev, botMessage]);
+
+            // Stream response
+            let fullText = '';
+            for await (const chunk of getAIResponseStream(userText)) {
+                fullText += chunk;
+                if (fullText.length > 0) setIsTyping(false);
+                setMessages(prev => prev.map(msg =>
+                    msg.id === botMessageId ? { ...msg, text: fullText } : msg
+                ));
+            }
         } catch (error) {
             console.error("Chat error:", error);
             const errorMessage: Message = {

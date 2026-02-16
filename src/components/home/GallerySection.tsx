@@ -8,55 +8,84 @@ import { Camera } from 'lucide-react';
 const GALLERY_ITEMS = [
     {
         id: 1,
-        src: 'https://images.unsplash.com/photo-1582510003544-5243789972d0?q=80&w=800&fit=crop', // Temple
+        src: 'https://images.unsplash.com/photo-1582443168850-6e1ea092647b?w=800&q=80', // Manakula Vinayagar Temple (Working)
         alt: 'Manakula Vinayagar Temple',
         className: 'md:col-span-1 md:row-span-2',
         location: 'White Town'
     },
     {
         id: 2,
-        src: 'https://images.unsplash.com/photo-1596367402913-647c16705d15?q=80&w=800&fit=crop', // Colorful Street
+        src: 'https://images.unsplash.com/photo-1582552938357-32b906df40cb?w=800&q=80', // French Quarter (Working)
         alt: 'French Quarter Streets',
         className: 'md:col-span-1 md:row-span-1',
         location: 'Rue Romain Rolland'
     },
     {
         id: 3,
-        src: 'https://images.unsplash.com/photo-1587474260584-136574528615?q=80&w=800&fit=crop', // French Building
+        src: 'https://images.unsplash.com/photo-1582255655519-7b3b6f0430f8?w=800&q=80', // Heritage Building (Working)
         alt: 'Colonial Architecture',
         className: 'md:col-span-1 md:row-span-1',
         location: 'French Colony'
     },
     {
         id: 4,
-        src: 'https://images.unsplash.com/photo-1543362906-ac1b4526c1d0?q=80&w=1200&fit=crop', // Beach (Wide)
+        src: 'https://images.unsplash.com/photo-1621517720977-ce9d53da3657?w=800&q=80', // Paradise Beach / Nature (Working)
         alt: 'Paradise Beach Sunrise',
         className: 'md:col-span-2 md:row-span-1',
         location: 'Paradise Beach'
     },
     {
         id: 5,
-        src: 'https://images.unsplash.com/photo-1615821556860-29c87d853b0e?q=80&w=800&fit=crop', // Auroville
-        alt: 'Matrimandir',
+        src: 'https://images.unsplash.com/photo-1548625361-987747e70e3c?w=800&q=80', // Church (Working)
+        alt: 'Sacred Heart Basilica',
         className: 'md:col-span-1 md:row-span-2',
-        location: 'Auroville'
+        location: 'Subbaiah Salai'
     },
     {
         id: 6,
-        src: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=800&fit=crop', // Cafe
+        src: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&q=80', // Cafe (Working)
         alt: 'Cafe des Arts',
         className: 'md:col-span-1 md:row-span-1',
         location: 'Heritage Town'
     },
 ];
 
+// Parallax Columns
+const COLUMN_1 = [...GALLERY_ITEMS, ...GALLERY_ITEMS, ...GALLERY_ITEMS];
+const COLUMN_2 = [...GALLERY_ITEMS.slice().reverse(), ...GALLERY_ITEMS.slice().reverse(), ...GALLERY_ITEMS.slice().reverse()];
+const COLUMN_3 = [...GALLERY_ITEMS, ...GALLERY_ITEMS, ...GALLERY_ITEMS];
+
+function GalleryCard({ item, index }: { item: typeof GALLERY_ITEMS[0], index: number }) {
+    return (
+        <div className="relative w-full h-[320px] rounded-3xl overflow-hidden group cursor-pointer shadow-lg hover:shadow-2xl transition-all duration-500 hover:scale-[1.02]">
+            <Image
+                src={item.src}
+                alt={item.alt}
+                fill
+                className="object-cover transition-transform duration-700 group-hover:scale-110"
+                sizes="(max-width: 768px) 100vw, 320px"
+            />
+            {/* Overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/0 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+            <div className="absolute bottom-0 left-0 p-5 opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-4 group-hover:translate-y-0 text-white z-10">
+                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider mb-1.5 text-violet-300">
+                    <Camera className="w-3 h-3" />
+                    {item.location}
+                </div>
+                <h3 className="font-bold text-lg leading-tight text-white mb-2">{item.alt}</h3>
+            </div>
+        </div>
+    );
+}
+
 export function GallerySection() {
     return (
-        <section className="py-24 bg-white dark:bg-slate-950">
+        <section className="py-24 bg-white dark:bg-slate-950 overflow-hidden font-sans">
             <div className="container mx-auto px-4 md:px-6 max-w-7xl">
 
                 {/* Header */}
-                <div className="text-center mb-16 space-y-4">
+                <div className="text-center mb-12 space-y-4 relative z-20">
                     <motion.div
                         initial={{ opacity: 0, scale: 0.9 }}
                         whileInView={{ opacity: 1, scale: 1 }}
@@ -87,38 +116,37 @@ export function GallerySection() {
                         Immerse yourself in the beauty of Pondicherry through our curated collection of stunning photographs.
                     </motion.p>
                 </div>
+            </div>
 
-                {/* Bento Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 auto-rows-[250px]">
-                    {GALLERY_ITEMS.map((item, i) => (
-                        <motion.div
-                            key={item.id}
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            whileInView={{ opacity: 1, scale: 1 }}
-                            viewport={{ once: true }}
-                            transition={{ delay: i * 0.1, duration: 0.5 }}
-                            className={`group relative rounded-3xl overflow-hidden cursor-pointer shadow-sm hover:shadow-xl transition-all duration-500 ${item.className}`}
-                        >
-                            <Image
-                                src={item.src}
-                                alt={item.alt}
-                                fill
-                                className="object-cover transition-transform duration-700 group-hover:scale-110"
-                                sizes="(max-width: 768px) 100vw, 33vw"
-                            />
+            {/* Parallax Marquee Grid */}
+            <div className="relative h-[800px] -mt-10 overflow-hidden">
+                {/* Gradient Fades Top & Bottom */}
+                <div className="absolute top-0 left-0 right-0 h-40 bg-gradient-to-b from-white dark:from-slate-950 via-white/80 dark:via-slate-950/80 to-transparent z-10 pointer-events-none" />
+                <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-white dark:from-slate-950 via-white/80 dark:via-slate-950/80 to-transparent z-10 pointer-events-none" />
 
-                            {/* Overlay */}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                {/* Tilted Grid Container */}
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-6 transform rotate-[-6deg] scale-110 -translate-y-24 md:-mx-12 opacity-90 hover:opacity-100 transition-opacity duration-500">
 
-                            <div className="absolute bottom-0 left-0 p-6 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-4 group-hover:translate-y-0 text-white">
-                                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider mb-1 text-white/80">
-                                    <Camera className="w-3 h-3" />
-                                    {item.location}
-                                </div>
-                                <h3 className="font-bold text-lg">{item.alt}</h3>
-                            </div>
-                        </motion.div>
-                    ))}
+                    {/* Column 1: Upward Scroll */}
+                    <div className="flex flex-col gap-6 animate-marquee-vertical">
+                        {COLUMN_1.map((item, i) => (
+                            <GalleryCard key={`c1-${i}`} item={item} index={i} />
+                        ))}
+                    </div>
+
+                    {/* Column 2: Downward Scroll (Offset) */}
+                    <div className="flex flex-col gap-6 animate-marquee-vertical-reverse pt-24">
+                        {COLUMN_2.map((item, i) => (
+                            <GalleryCard key={`c2-${i}`} item={item} index={i} />
+                        ))}
+                    </div>
+
+                    {/* Column 3: Upward Scroll (Hidden on Mobile) */}
+                    <div className="hidden md:flex flex-col gap-6 animate-marquee-vertical pt-12">
+                        {COLUMN_3.map((item, i) => (
+                            <GalleryCard key={`c3-${i}`} item={item} index={i} />
+                        ))}
+                    </div>
                 </div>
             </div>
         </section>

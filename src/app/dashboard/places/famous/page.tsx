@@ -109,22 +109,27 @@ export default function FamousPlacesPage() {
                 {/* Category Tabs */}
                 <Tabs value={activeCategory} onValueChange={setActiveCategory} className="space-y-8">
                     {/* Centered Category Navigation */}
-                    <div className="flex justify-center overflow-x-auto pb-4">
-                        <TabsList className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-2 shadow-lg inline-flex flex-wrap gap-2">
+                    {/* Sticky Category Navigation */}
+                    <div className="sticky top-20 z-30 px-4 pb-4 bg-gradient-to-b from-slate-50 via-slate-50 to-transparent dark:from-slate-950 dark:via-slate-950 pt-2">
+                        <TabsList className="h-auto bg-transparent dark:bg-transparent border-0 shadow-none p-0 w-full flex flex-wrap justify-center gap-2 sm:gap-3">
                             {CATEGORIES.map((cat) => {
                                 const Icon = cat.icon;
                                 return (
                                     <TabsTrigger
                                         key={cat.id}
                                         value={cat.id}
-                                        className="rounded-xl px-6 py-3 font-semibold text-sm transition-all duration-300 flex items-center gap-2
-                                            data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-600 data-[state=active]:to-cyan-600 
-                                            data-[state=active]:text-white data-[state=active]:shadow-md
-                                            text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                                        className="rounded-full px-4 py-2 sm:px-5 sm:py-2.5 font-bold text-sm transition-all duration-300 flex items-center gap-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm
+                                            data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-600 data-[state=active]:to-orange-600 
+                                            data-[state=active]:text-white data-[state=active]:border-transparent
+                                            data-[state=active]:shadow-md data-[state=active]:scale-105
+                                            text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-700"
                                     >
                                         <Icon className="w-4 h-4" />
                                         <span>{cat.label}</span>
-                                        <Badge variant="secondary" className="ml-1 bg-slate-100 dark:bg-slate-800 text-xs">{cat.count}</Badge>
+                                        <span className="ml-1.5 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-[10px] font-extrabold px-1
+                                            group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white text-slate-500">
+                                            {cat.count}
+                                        </span>
                                     </TabsTrigger>
                                 );
                             })}
@@ -139,7 +144,7 @@ export default function FamousPlacesPage() {
                                 animate={{ opacity: 1, y: 0 }}
                                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
                             >
-                                {FAMOUS_PLACES[category as keyof typeof FAMOUS_PLACES].map((place: any, idx: number) => (
+                                {(FAMOUS_PLACES[category as keyof typeof FAMOUS_PLACES] as { name: string; location: string; image: string }[]).map((place, idx) => (
                                     <motion.div
                                         key={idx}
                                         initial={{ opacity: 0, scale: 0.95 }}

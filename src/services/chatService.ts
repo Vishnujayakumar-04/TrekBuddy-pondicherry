@@ -1,10 +1,11 @@
-import { PLACES_DATA } from '@/services/data/places';
-import { ollamaService } from '@/lib/ollama';
 
-// Simplified Places Data for Context - Kept concise for local LLM context window limits
+import { PLACES_DATA } from '@/services/data/places';
+import { groqService } from '@/lib/groq';
+
+// Simplified Places Data for Context
 const PLACES_CONTEXT = PLACES_DATA.map(p =>
     `- ${p.name} (${p.category} in ${p.location}): ${p.description}. Best time: ${p.bestTime}.`
-).slice(0, 20).join('\n'); // Limit to top 20 to save context
+).slice(0, 30).join('\n');
 
 const SYSTEM_INSTRUCTION = `
 You are TrekBuddy AI, an expert local guide for Puducherry (Pondicherry), India.
@@ -38,13 +39,32 @@ export async function getAIResponse(userMessage: string): Promise<string> {
     if (lowerMsg.includes('itinerary') || lowerMsg.includes('plan')) return QUICK_REPLIES['itinerary'];
     if (lowerMsg.includes('shop')) return QUICK_REPLIES['shopping'];
 
-    // 2. Fallback to Local AI (Ollama)
+    // 2. Use Groq AI
     try {
-        const response = await ollamaService.generateResponse(userMessage, SYSTEM_INSTRUCTION);
+        const response = await groqService.generateResponse(userMessage, SYSTEM_INSTRUCTION);
         return response;
     } catch (error: any) {
-        console.error("Ollama Chat Error:", error);
-        return `I'm having trouble connecting to my local brain (Ollama). But here's a quick tip: Try visiting **White Town** for a beautiful evening walk! (Error: ${error.message})`;
+        console.error("Groq Chat Error:", error);
+        return `I'm having trouble connecting to Groq AI. But here's a quick tip: Try visiting **White Town** for a beautiful evening walk! (Error: ${error.message})`;
     }
 }
 
+export async function* getAIResponseStream(userMessage: string): AsyncGenerator<string> {
+    // 1. Check for Quick Replies (Instant Response)
+    const lowerMsg = userMessage.toLowerCase();
+    if (lowerMsg.includes('beach')) { yield QUICK_REPLIES['beaches']; return; }
+    if (lowerMsg.includes('eat') || lowerMsg.includes('restaurant') || lowerMsg.includes('food')) { yield QUICK_REPLIES['restaurants']; return; }
+    if (lowerMsg.includes('temple')) { yield QUICK_REPLIES['temples']; return; }
+    if (lowerMsg.includes('itinerary') || lowerMsg.includes('plan')) { yield QUICK_REPLIES['itinerary']; return; }
+    if (lowerMsg.includes('shop')) { yield QUICK_REPLIES['shopping']; return; }
+
+    // 2. Use Groq AI with Streaming
+    try {
+        for await (const chunk of groqService.generateResponseStream(userMessage, SYSTEM_INSTRUCTION)) {
+            yield chunk;
+        }
+    } catch (error: any) {
+        console.error("Groq Chat Error:", error);
+        yield `I'm having trouble connecting to Groq AI. But here's a quick tip: Try visiting **White Town** for a beautiful evening walk! (Error: ${error.message})`;
+    }
+}

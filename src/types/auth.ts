@@ -12,4 +12,7 @@ export interface UserProfile {
     };
     savedPlaces: string[];
     visitedPlaces: string[];
+    phone?: string;
+    dob?: string;
+    gender?: 'Male' | 'Female' | 'Other' | string;
 }

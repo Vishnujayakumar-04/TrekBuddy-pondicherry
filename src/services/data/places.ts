@@ -1,26 +1,22 @@
 
-export interface Place {
-    id: string;
-    name: string;
-    category: string;
-    description: string;
-    location: string;
-    rating: number;
-    image: string;
-    tags: string[];
-    timeSlot: 'Morning' | 'Afternoon' | 'Evening';
-    bestTime?: string;
-    openTime?: string;
-    entryFee?: string;
-}
+import { Place } from './types';
+export type { Place };
+import { IMPORTED_PLACES } from './mapped_data';
 
-export const PLACES_DATA: Place[] = [
+const MANUAL_PLACES: Place[] = [
     // --- BEACHES (Updated from Beaches.xlsx) ---
     {
         id: 'b1', name: "Promenade Beach", category: "beaches",
         description: "Historic French-era beachfront. Famous for sunrise walks. Swimming is not allowed.",
         location: "White Town", rating: 4.7,
-        image: "https://images.unsplash.com/photo-1582552938357-32b906df40cb?w=800&auto=format&fit=crop&q=60",
+        image: "/images/places/b1/1.jpg",
+        gallery: [
+            "/images/places/b1/1.jpg",
+            "/images/places/b1/2.jpg",
+            "/images/places/b1/3.jpg",
+            "/images/places/b1/4.jpg",
+            "/images/places/b1/5.jpg"
+        ],
         tags: ["Sunrise", "No Swimming", "Walking"], timeSlot: "Morning",
         bestTime: "Early Morning", openTime: "24x7"
     },
@@ -488,6 +484,9 @@ export const PLACES_DATA: Place[] = [
     }
 ];
 
+
+export const PLACES_DATA: Place[] = [...MANUAL_PLACES, ...IMPORTED_PLACES];
+
 export function getPlacesByCategory(category: string): Place[] {
     const cat = category.toLowerCase();
 
@@ -509,6 +508,8 @@ export function getPlacesByCategory(category: string): Place[] {
     if (cat === 'restaurants') return PLACES_DATA.filter(p => ['restaurants', 'cafes', 'food'].includes(p.category));
     if (cat === 'hotels') return PLACES_DATA.filter(p => ['hotels', 'pg'].includes(p.category));
     if (cat === 'accommodations') return PLACES_DATA.filter(p => ['hotels', 'pg'].includes(p.category));
+    if (cat === 'nightlife') return PLACES_DATA.filter(p => ['nightlife', 'pubs'].includes(p.category));
+    if (cat === 'emergency') return PLACES_DATA.filter(p => ['emergency', 'hospitals'].includes(p.category));
 
     return PLACES_DATA.filter(p => p.category === cat);
 }

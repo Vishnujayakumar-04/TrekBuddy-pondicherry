@@ -1,34 +1,33 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuthContext } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import {
-  Map, MessageCircle, Bus, ArrowRight, ArrowDown, Waves, Landmark, Utensils, Flower2, Umbrella,
-  Sparkles, Star, Users, Compass, Globe, ChevronRight, Heart, Camera, Zap
+  ArrowRight, Waves, Landmark, Utensils, Flower2, Umbrella,
+  Star, Sparkles, Zap
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { BestTimeSection } from '@/components/home/BestTimeSection';
 import { CinematicHero } from '@/components/home/CinematicHero';
 import { GallerySection } from '@/components/home/GallerySection';
+
+// ... (existing imports)
+
 import { Footer } from '@/components/layout/Footer';
 
 /* ─────────── DATA ─────────── */
-const FEATURES = [
-  { title: 'AI Trip Planner', desc: 'Tell us your vibe — adventure, culture, or zen — and our AI builds your dream itinerary in seconds.', icon: Map, href: '/dashboard/planner', gradient: 'from-cyan-500 to-blue-600', accent: 'cyan' },
-  { title: 'Smart AI Guide', desc: 'A personal travel concierge that answers anything about Puducherry — history, food, hidden gems.', icon: MessageCircle, href: '/dashboard/chat', gradient: 'from-violet-500 to-purple-600', accent: 'violet' },
-  { title: 'Local Transit Hub', desc: 'Real-time bikes, autos, buses, and trains. Navigate like a local from day one.', icon: Bus, href: '/dashboard/transit', gradient: 'from-amber-500 to-orange-600', accent: 'amber' },
-];
 
 const CATEGORIES = [
-  { id: 'beaches', title: 'Beaches', image: '/images/category-beach.jpg', icon: Waves, count: '5 Spots', color: 'from-cyan-400 to-blue-500' },
-  { id: 'heritage', title: 'Heritage', image: '/images/category-heritage.jpg', icon: Landmark, count: '12 Sites', color: 'from-amber-400 to-orange-500' },
-  { id: 'food', title: 'Food & Dining', image: '/images/category-food.jpg', icon: Utensils, count: '20+ Cafes', color: 'from-rose-400 to-pink-500' },
-  { id: 'spiritual', title: 'Spiritual', image: '/images/category-spiritual.jpg', icon: Flower2, count: '4 Centers', color: 'from-violet-400 to-purple-500' },
-  { id: 'nature', title: 'Nature', image: '/images/category-nature.jpg', icon: Umbrella, count: '8 Parks', color: 'from-emerald-400 to-teal-500' },
+  { id: 'beaches', title: 'Beaches', image: 'https://images.unsplash.com/photo-1543362906-ac1b4526c1d0?q=80&w=800', icon: Waves, count: '5 Spots', color: 'from-cyan-400 to-blue-500' },
+  { id: 'heritage', title: 'Heritage', image: 'https://images.unsplash.com/photo-1582552938357-32b906df40cb?w=800&q=60', icon: Landmark, count: '12 Sites', color: 'from-amber-400 to-orange-500' },
+  { id: 'food', title: 'Food & Dining', image: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&q=80', icon: Utensils, count: '20+ Cafes', color: 'from-rose-400 to-pink-500' },
+  { id: 'spiritual', title: 'Spiritual', image: 'https://images.unsplash.com/photo-1598890777032-bde835ba27c2?w=800&q=80', icon: Flower2, count: '4 Centers', color: 'from-violet-400 to-purple-500' },
+  { id: 'nature', title: 'Nature', image: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&q=80', icon: Umbrella, count: '8 Parks', color: 'from-emerald-400 to-teal-500' },
 ];
 
 const STATS = [
@@ -75,14 +74,31 @@ function useCounter(target: number, duration = 2000) {
 
 
 
+const StatCard = ({ stat, index }: { stat: typeof STATS[0], index: number }) => {
+  const { count, ref } = useCounter(stat.value);
+
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ delay: index * 0.1 }}
+      className="relative p-6 md:p-8 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm shadow-xl flex flex-col items-center justify-center text-center group hover:bg-white/10 transition-all duration-300"
+    >
+      <div className="text-4xl md:text-5xl font-black text-white mb-3 tabular-nums tracking-tight">
+        {count.toLocaleString()}{stat.suffix}
+      </div>
+      <div className="text-sm text-slate-400 font-medium tracking-wide uppercase group-hover:text-white transition-colors">{stat.label}</div>
+    </motion.div>
+  );
+};
+
 /* ─────────── MAIN PAGE ─────────── */
 export default function HomePage() {
   const router = useRouter();
   const { user, loading } = useAuthContext();
-  const [hoveredFeature, setHoveredFeature] = useState<number | null>(null);
   const [hoveredCat, setHoveredCat] = useState<string | null>(null);
-
-
 
   const handleStartPlanning = () => {
     if (loading) return;
@@ -94,48 +110,6 @@ export default function HomePage() {
 
       <CinematicHero />
 
-      {/* ═══════════════ 2. FEATURE CARDS (Overlapping Hero) ═══════════════ */}
-      <section className="relative z-20 -mt-24 pb-24">
-        <div className="container mx-auto px-4 md:px-6 max-w-6xl">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {FEATURES.map((feature, i) => (
-              <Link key={feature.title} href={feature.href}>
-                <motion.div
-                  initial={{ opacity: 0, y: 50 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.15, type: 'spring', bounce: 0.25 }}
-                  onHoverStart={() => setHoveredFeature(i)}
-                  onHoverEnd={() => setHoveredFeature(null)}
-                  className="group relative h-full bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-xl hover:shadow-2xl transition-all duration-500 overflow-hidden cursor-pointer"
-                >
-                  {/* Hover gradient reveal */}
-                  <div className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
-
-                  <div className="relative z-10 p-8">
-                    {/* Icon */}
-                    <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center text-white mb-6 shadow-lg group-hover:bg-white/20 group-hover:shadow-none transition-all`}>
-                      <feature.icon className="w-7 h-7" />
-                    </div>
-
-                    <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-3 group-hover:text-white transition-colors">
-                      {feature.title}
-                    </h3>
-                    <p className="text-slate-500 group-hover:text-white/80 leading-relaxed mb-6 transition-colors text-sm">
-                      {feature.desc}
-                    </p>
-
-                    <div className="flex items-center text-sm font-bold text-slate-900 dark:text-white group-hover:text-white transition-colors">
-                      Explore
-                      <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
-                    </div>
-                  </div>
-                </motion.div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* ═══════════════ 3. ANIMATED STATS BAR ═══════════════ */}
       <section className="py-20 bg-slate-950 dark:bg-slate-900 relative overflow-hidden">
@@ -146,107 +120,20 @@ export default function HomePage() {
 
         <div className="container mx-auto px-4 md:px-6 max-w-5xl relative z-10">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {STATS.map((stat, i) => {
-              const { count, ref } = useCounter(stat.value);
-              return (
-                <motion.div
-                  key={stat.label}
-                  ref={ref}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  className="text-center"
-                >
-                  <div className="text-4xl md:text-5xl font-black text-white mb-2 tabular-nums">
-                    {count.toLocaleString()}{stat.suffix}
-                  </div>
-                  <div className="text-sm text-slate-400 font-medium tracking-wide">{stat.label}</div>
-                </motion.div>
-              );
-            })}
+            {STATS.map((stat, i) => (
+              <StatCard key={stat.label} stat={stat} index={i} />
+            ))}
           </div>
         </div>
       </section>
 
       {/* ═══════════════ 4. IMMERSIVE CATEGORIES ═══════════════ */}
       <section className="py-24 bg-slate-50 dark:bg-slate-950 overflow-hidden">
-        <div className="container mx-auto px-4 md:px-6 max-w-7xl">
-          <div className="flex flex-col md:flex-row justify-between items-end mb-14 gap-6">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="space-y-4 max-w-2xl"
-            >
-              <Badge className="bg-cyan-100 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-400 border-cyan-200 dark:border-cyan-800 px-4 py-1 text-xs font-bold uppercase tracking-widest rounded-full">
-                Curated For You
-              </Badge>
-              <h2 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
-                Explore by
-                <span className="bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent"> Interest</span>
-              </h2>
-              <p className="text-slate-500 dark:text-slate-400 text-lg">
-                Handpicked collections of the best Puducherry has to offer.
-              </p>
-            </motion.div>
-            <Link href="/dashboard/categories">
-              <Button variant="outline" className="rounded-full px-6 h-12 font-bold border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
-                View All <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-            </Link>
-          </div>
-
-          {/* Horizontal scroll categories */}
-          <div className="w-full overflow-x-auto pb-8 -mx-4 px-4 hide-scrollbar">
-            <div className="flex gap-5 w-max">
-              {CATEGORIES.map((cat, i) => (
-                <Link key={cat.id} href={`/dashboard/categories/${cat.id}`}>
-                  <motion.div
-                    initial={{ opacity: 0, x: 40 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.1, type: 'spring', bounce: 0.2 }}
-                    onHoverStart={() => setHoveredCat(cat.id)}
-                    onHoverEnd={() => setHoveredCat(null)}
-                    className="group relative w-[280px] md:w-[320px] h-[420px] rounded-3xl overflow-hidden cursor-pointer shadow-sm hover:shadow-2xl transition-shadow duration-500"
-                  >
-                    {/* Background */}
-                    <div className="absolute inset-0 bg-slate-200 dark:bg-slate-800" />
-                    <Image src={cat.image} alt={cat.title} fill className="object-cover transition-transform duration-700 ease-out group-hover:scale-110" />
-
-                    {/* Overlays */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent" />
-                    <div className={`absolute inset-0 bg-gradient-to-br ${cat.color} opacity-0 group-hover:opacity-20 transition-opacity duration-500`} />
-
-                    {/* Count badge */}
-                    <div className="absolute top-5 left-5 z-10">
-                      <Badge className="bg-white/15 hover:bg-white/25 border-none text-white backdrop-blur-xl text-xs font-bold px-3 py-1 rounded-lg">
-                        {cat.count}
-                      </Badge>
-                    </div>
-
-                    {/* Content */}
-                    <div className="absolute bottom-0 left-0 right-0 p-7 z-10">
-                      <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${cat.color} flex items-center justify-center text-white mb-3 shadow-lg group-hover:scale-110 transition-transform`}>
-                        <cat.icon className="w-6 h-6" />
-                      </div>
-                      <h3 className="text-2xl font-bold text-white mb-2">{cat.title}</h3>
-                      <div className={`h-1 rounded-full bg-gradient-to-r ${cat.color} transition-all duration-500 ${hoveredCat === cat.id ? 'w-20' : 'w-10'}`} />
-
-                      {/* Hover CTA */}
-                      <div className={`flex items-center gap-2 text-sm font-bold text-white mt-3 transition-all duration-300 ${hoveredCat === cat.id ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}`}>
-                        Explore <ArrowRight className="w-4 h-4" />
-                      </div>
-                    </div>
-                  </motion.div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </div>
+        {/* ... (existing content) ... */}
       </section>
 
+      {/* ═══════════════ 5. BEST TIME TO VISIT ═══════════════ */}
+      <BestTimeSection />
 
       {/* ═══════════════ GALERY SECTION ═══════════════ */}
       <GallerySection />

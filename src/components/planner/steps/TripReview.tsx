@@ -118,7 +118,7 @@ export function TripReview({ draft, isGenerating, onGenerate, onEditStep }: Step
                     )}
                 </Button>
                 <p className="text-center text-xs text-slate-400 mt-3">
-                    Powered by Ollama AI • Takes ~10-15 seconds
+                    Powered by Groq AI • Blazing Fast ⚡
                 </p>
             </div>
         </div>

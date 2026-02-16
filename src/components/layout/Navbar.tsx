@@ -22,7 +22,7 @@ import { useState, useEffect } from 'react';
 
 const NAV_LINKS = [
     { label: 'Home', href: '/' },
-    { label: 'Famous Places', href: '/dashboard/places/1', variant: 'featured' },
+    { label: 'Famous Places', href: '/dashboard/places/famous', variant: 'featured' },
     { label: 'Explore', href: '/dashboard/categories' },
     { label: 'Planner', href: '/dashboard/planner' },
     { label: 'Events', href: '/dashboard/events' },
@@ -33,7 +33,7 @@ const NAV_LINKS = [
 
 const MOBILE_LINKS = [
     { label: 'Home', href: '/', icon: Compass },
-    { label: 'About', href: '/about', icon: Heart },
+    { label: 'Famous Places', href: '/dashboard/places/famous', icon: Star },
     { label: 'Explore', href: '/dashboard/categories', icon: Map },
     { label: 'Trip Planner', href: '/dashboard/planner', icon: Map },
     { label: 'AI Guide', href: '/dashboard/chat', icon: MessageCircle },

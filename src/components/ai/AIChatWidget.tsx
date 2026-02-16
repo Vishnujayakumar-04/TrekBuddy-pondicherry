@@ -104,52 +104,51 @@ export function AIChatWidget() {
                     return;
                 }
             } catch (cacheError) {
-                // Firestore cache miss or error — continue to Ollama
-                console.warn('Cache check failed, using Ollama directly:', cacheError);
+                // 3. Use Groq AI
+                try {
+                    const chatHistory = [...messages, userMessage]
+                        .slice(-6)
+                        .map(m => `${m.sender === 'user' ? 'User' : 'Guide'}: ${m.text}`)
+                        .join('\n');
+
+                    const fullPrompt = `${chatHistory}\nUser: ${userText}\nGuide:`;
+                    const responseText = await aiService.generateResponse(fullPrompt, PUDUCHERRY_SYSTEM_PROMPT);
+
+                    const botMessage: Message = {
+                        id: (Date.now() + 1).toString(),
+                        text: responseText,
+                        sender: 'bot',
+                        timestamp: new Date()
+                    };
+                    setMessages(prev => [...prev, botMessage]);
+
+                    // 4. Save to Firestore Cache (Async, best-effort)
+                    addDoc(collection(db, 'ai_cache'), {
+                        question: userText.toLowerCase(),
+                        answer: responseText,
+                        createdAt: serverTimestamp()
+                    }).catch(() => { /* ignore cache write failures */ });
+
+                } catch (error: unknown) {
+                    console.error('AI response error:', error);
+
+                    let fallbackText = "I'm having trouble connecting to Groq AI.";
+                    const errorStr = (error instanceof Error) ? error.message : String(error);
+
+                    if (errorStr?.includes('fetch') || errorStr?.includes('Failed') || errorStr?.includes('API_KEY')) {
+                        fallbackText = "I can't reach Groq AI. Please check your API key configuration.\n\nTry asking about:\n• Popular Beaches\n• Heritage Sites\n• Best Cafes";
+                    } else {
+                        fallbackText = "That took longer than expected. Please try again.\n\nAsk me about:\n• Bike Rentals\n• Ashrams\n• Local Food";
+                    }
+
+                    setMessages(prev => [...prev, {
+                        id: (Date.now() + 1).toString(),
+                        text: fallbackText,
+                        sender: 'bot',
+                        timestamp: new Date()
+                    }]);
+                }
             }
-
-            // 3. Use Ollama (Local AI)
-            const chatHistory = [...messages, userMessage]
-                .slice(-6)
-                .map(m => `${m.sender === 'user' ? 'User' : 'Guide'}: ${m.text}`)
-                .join('\n');
-
-            const fullPrompt = `${chatHistory}\nUser: ${userText}\nGuide:`;
-            const responseText = await aiService.generateResponse(fullPrompt, PUDUCHERRY_SYSTEM_PROMPT);
-
-            const botMessage: Message = {
-                id: (Date.now() + 1).toString(),
-                text: responseText,
-                sender: 'bot',
-                timestamp: new Date()
-            };
-            setMessages(prev => [...prev, botMessage]);
-
-            // 4. Save to Firestore Cache (Async, best-effort)
-            addDoc(collection(db, 'ai_cache'), {
-                question: userText.toLowerCase(),
-                answer: responseText,
-                createdAt: serverTimestamp()
-            }).catch(() => { /* ignore cache write failures */ });
-
-        } catch (error: unknown) {
-            console.error('AI response error:', error);
-
-            let fallbackText = "I'm having trouble connecting to Ollama.";
-            const errorStr = (error instanceof Error) ? error.message : String(error);
-
-            if (errorStr?.includes('fetch') || errorStr?.includes('Failed') || errorStr?.includes('ECONNREFUSED')) {
-                fallbackText = "I can't reach Ollama. Make sure 'ollama serve' is running in your terminal!\n\nTry asking about:\n• Popular Beaches\n• Heritage Sites\n• Best Cafes";
-            } else {
-                fallbackText = "That took longer than expected. Make sure Ollama is running locally.\n\nAsk me about:\n• Bike Rentals\n• Ashrams\n• Local Food";
-            }
-
-            setMessages(prev => [...prev, {
-                id: (Date.now() + 1).toString(),
-                text: fallbackText,
-                sender: 'bot',
-                timestamp: new Date()
-            }]);
         } finally {
             setIsTyping(false);
         }

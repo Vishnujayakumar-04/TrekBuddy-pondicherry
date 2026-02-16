@@ -1,9 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
+import { useFavorites } from '@/hooks/useFavorites';
+import { db, storage } from '@/lib/firebase';
+import { doc, setDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { updateProfile } from 'firebase/auth';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -15,14 +22,92 @@ import { Heart, MapPin, Settings as SettingsIcon, LogOut, User, Camera, Shield, 
 import { toast } from 'sonner';
 
 export default function ProfilePage() {
-    const { user, logout } = useAuth();
+    const { user, userProfile, logout } = useAuth();
+    const { favorites } = useFavorites();
     const [displayName, setDisplayName] = useState(user?.displayName || '');
+    const [phone, setPhone] = useState('');
+    const [dob, setDob] = useState('');
+    const [gender, setGender] = useState('');
     const [updating, setUpdating] = useState(false);
+    const [uploadingImage, setUploadingImage] = useState(false);
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (!storage || !user) {
+            toast.error("Storage not available");
+            return;
+        }
+
+        setUploadingImage(true);
+        const toastId = toast.loading("Uploading image...");
+
+        try {
+            // Create reference
+            const storageRef = ref(storage, `users/${user.uid}/profile_${Date.now()}.jpg`);
+
+            // Upload
+            await uploadBytes(storageRef, file);
+            const downloadURL = await getDownloadURL(storageRef);
+
+            // Update Auth
+            await updateProfile(user, { photoURL: downloadURL });
+
+            // Update Firestore
+            if (db) {
+                await setDoc(doc(db, 'users', user.uid), {
+                    photoURL: downloadURL,
+                    updatedAt: new Date().toISOString()
+                }, { merge: true });
+            }
+
+            toast.dismiss(toastId);
+            toast.success("Profile picture updated!");
+
+            // Reload to reflect changes globally
+            window.location.reload();
+
+        } catch (error) {
+            console.error("Upload failed", error);
+            toast.dismiss(toastId);
+            toast.error("Failed to upload image");
+        } finally {
+            setUploadingImage(false);
+        }
+    };
+
+    useEffect(() => {
+        if (userProfile) {
+            if (userProfile.displayName) setDisplayName(userProfile.displayName);
+            if (userProfile.phone) setPhone(userProfile.phone);
+            if (userProfile.dob) setDob(userProfile.dob);
+            if (userProfile.gender) setGender(userProfile.gender);
+        }
+    }, [userProfile]);
 
     const handleUpdateProfile = async () => {
         setUpdating(true);
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        toast.success('Profile updated successfully');
+        if (user && db) {
+            try {
+                await setDoc(doc(db, 'users', user.uid), {
+                    displayName,
+                    phone,
+                    dob,
+                    gender,
+                    email: user.email,
+                    updatedAt: new Date().toISOString()
+                }, { merge: true });
+                toast.success('Profile updated successfully');
+            } catch (error) {
+                console.error("Error updating profile:", error);
+                toast.error("Failed to update profile");
+            }
+        } else {
+            // Fallback for demo/offline
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            toast.success('Profile updated locally (connect DB for persistence)');
+        }
         setUpdating(false);
     };
 
@@ -70,9 +155,20 @@ export default function ProfilePage() {
                                         {user.displayName?.charAt(0) || 'U'}
                                     </AvatarFallback>
                                 </Avatar>
-                                <button className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center shadow-lg hover:scale-110 transition-transform">
+                                <label
+                                    htmlFor="avatar-upload"
+                                    className={`absolute bottom-0 right-0 w-8 h-8 rounded-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center shadow-lg hover:scale-110 transition-transform cursor-pointer ${uploadingImage ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                >
                                     <Camera className="w-3.5 h-3.5" />
-                                </button>
+                                    <input
+                                        id="avatar-upload"
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={handleImageUpload}
+                                        disabled={uploadingImage}
+                                    />
+                                </label>
                             </div>
 
                             <h2 className="text-xl font-bold text-slate-900 dark:text-white">{user.displayName}</h2>
@@ -139,15 +235,45 @@ export default function ProfilePage() {
                                         <h3 className="font-bold text-lg text-slate-900 dark:text-white">Saved Places</h3>
                                         <p className="text-sm text-slate-500 mt-0.5">Destinations you've bookmarked for later.</p>
                                     </div>
-                                    <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-                                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-rose-100 to-pink-100 dark:from-rose-900/20 dark:to-pink-900/20 flex items-center justify-center mb-4 shadow-lg shadow-rose-500/10">
-                                            <Heart className="w-7 h-7 text-rose-500" />
+                                    {favorites.length === 0 ? (
+                                        <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+                                            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-rose-100 to-pink-100 dark:from-rose-900/20 dark:to-pink-900/20 flex items-center justify-center mb-4 shadow-lg shadow-rose-500/10">
+
+                                                <Heart className="w-7 h-7 text-rose-500" />
+                                            </div>
+                                            <p className="text-slate-500 font-medium mb-3">You haven't saved any places yet.</p>
+                                            <Button variant="link" asChild className="text-cyan-600 font-semibold">
+                                                <Link href="/dashboard/categories">Explore Places →</Link>
+                                            </Button>
                                         </div>
-                                        <p className="text-slate-500 font-medium mb-3">You haven't saved any places yet.</p>
-                                        <Button variant="link" asChild className="text-cyan-600 font-semibold">
-                                            <Link href="/dashboard/categories">Explore Places →</Link>
-                                        </Button>
-                                    </div>
+                                    ) : (
+                                        <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            {favorites.map((place) => (
+                                                <Link href={`/dashboard/places/${place.id}`} key={place.id} className="block group">
+                                                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 transition-all hover:border-cyan-500 hover:shadow-md">
+                                                        <div className="relative h-40 w-full">
+                                                            <Image src={place.image} alt={place.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
+                                                            <div className="absolute top-2 right-2 bg-white/90 dark:bg-slate-900/90 p-1.5 rounded-full shadow-sm">
+                                                                <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
+                                                            </div>
+                                                        </div>
+                                                        <div className="p-4">
+                                                            <div className="flex justify-between items-start">
+                                                                <h4 className="font-bold text-slate-900 dark:text-white mb-1 line-clamp-1">{place.name}</h4>
+                                                                <div className="flex items-center text-orange-500 text-xs font-bold gap-0.5 bg-orange-50 dark:bg-orange-900/20 px-1.5 py-0.5 rounded-md">
+                                                                    <span className="text-[10px]">★</span> {place.rating}
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex items-center text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                                                <MapPin className="w-3 h-3 mr-1" />
+                                                                {place.location}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </Link>
+                                            ))}
+                                        </div>
+                                    )}
                                 </motion.div>
                             </TabsContent>
 
@@ -201,6 +327,43 @@ export default function ProfilePage() {
                                                 disabled
                                                 className="h-12 rounded-xl bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 opacity-60"
                                             />
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="phone" className="text-sm font-semibold text-slate-700 dark:text-slate-300">Phone Number</Label>
+                                                <Input
+                                                    id="phone"
+                                                    value={phone}
+                                                    onChange={(e) => setPhone(e.target.value)}
+                                                    placeholder="+91 98765 43210"
+                                                    className="h-12 rounded-xl bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 focus:border-cyan-300 dark:focus:border-cyan-700"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="dob" className="text-sm font-semibold text-slate-700 dark:text-slate-300">Date of Birth</Label>
+                                                <Input
+                                                    id="dob"
+                                                    type="date"
+                                                    value={dob}
+                                                    onChange={(e) => setDob(e.target.value)}
+                                                    className="h-12 rounded-xl bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 focus:border-cyan-300 dark:focus:border-cyan-700"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Gender</Label>
+                                            <Select value={gender} onValueChange={setGender}>
+                                                <SelectTrigger className="h-12 rounded-xl bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 focus:ring-cyan-500">
+                                                    <SelectValue placeholder="Select gender" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="Male">Male</SelectItem>
+                                                    <SelectItem value="Female">Female</SelectItem>
+                                                    <SelectItem value="Other">Other</SelectItem>
+                                                </SelectContent>
+                                            </Select>
                                         </div>
                                         <Button
                                             onClick={handleUpdateProfile}
